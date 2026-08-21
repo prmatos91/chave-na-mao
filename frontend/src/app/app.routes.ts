@@ -22,6 +22,11 @@ export const routes: Routes = [
       import('./features/veiculos/veiculo-form/veiculo-form').then((m) => m.VeiculoForm),
   },
   {
+    path: 'veiculos/:id',
+    loadComponent: () =>
+      import('./features/veiculos/veiculo-detail/veiculo-detail').then((m) => m.VeiculoDetail),
+  },
+  {
     path: 'clientes',
     loadComponent: () =>
       import('./features/clientes/cliente-list/cliente-list').then((m) => m.ClienteList),
@@ -35,6 +40,11 @@ export const routes: Routes = [
     path: 'clientes/:id/editar',
     loadComponent: () =>
       import('./features/clientes/cliente-form/cliente-form').then((m) => m.ClienteForm),
+  },
+  {
+    path: 'clientes/:id',
+    loadComponent: () =>
+      import('./features/clientes/cliente-detail/cliente-detail').then((m) => m.ClienteDetail),
   },
   {
     path: 'oportunidades',
@@ -55,6 +65,13 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/oportunidades/oportunidade-form/oportunidade-form').then(
         (m) => m.OportunidadeForm
+      ),
+  },
+  {
+    path: 'oportunidades/:id',
+    loadComponent: () =>
+      import('./features/oportunidades/oportunidade-detail/oportunidade-detail').then(
+        (m) => m.OportunidadeDetail
       ),
   },
   { path: '**', redirectTo: 'dashboard' },

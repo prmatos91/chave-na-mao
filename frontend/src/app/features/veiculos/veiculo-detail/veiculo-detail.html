@@ -1,0 +1,59 @@
+@if (carregando()) {
+  <div class="empty-state">
+    <mat-spinner diameter="32" />
+  </div>
+} @else if (veiculo(); as v) {
+  <div class="page-header">
+    <div class="title-row">
+      <button mat-icon-button routerLink="/veiculos" aria-label="Voltar">
+        <mat-icon>arrow_back</mat-icon>
+      </button>
+      <h1>{{ v.marca }} {{ v.modelo }}</h1>
+    </div>
+    <div class="actions">
+      <button mat-stroked-button [routerLink]="['/veiculos', v.id, 'editar']">
+        <mat-icon>edit</mat-icon>
+        Editar
+      </button>
+      <button mat-stroked-button color="warn" (click)="excluir()">
+        <mat-icon>delete</mat-icon>
+        Excluir
+      </button>
+    </div>
+  </div>
+
+  <mat-card class="detail-card">
+    <dl class="detail-grid">
+      <div>
+        <dt>Ano</dt>
+        <dd>{{ v.ano }}</dd>
+      </div>
+      <div>
+        <dt>Preço</dt>
+        <dd>{{ v.preco | currency: 'BRL' }}</dd>
+      </div>
+      <div>
+        <dt>Cor</dt>
+        <dd>{{ v.cor }}</dd>
+      </div>
+      <div>
+        <dt>Quilometragem</dt>
+        <dd>{{ v.quilometragem | number }} km</dd>
+      </div>
+      <div>
+        <dt>Status</dt>
+        <dd>
+          <span class="status-chip" [class]="statusColor[v.status]">{{ statusLabels[v.status] }}</span>
+        </dd>
+      </div>
+      <div>
+        <dt>Cadastrado em</dt>
+        <dd>{{ v.createdAt | date: 'dd/MM/yyyy HH:mm' }}</dd>
+      </div>
+      <div>
+        <dt>Última atualização</dt>
+        <dd>{{ v.updatedAt | date: 'dd/MM/yyyy HH:mm' }}</dd>
+      </div>
+    </dl>
+  </mat-card>
+}

@@ -12,6 +12,7 @@ Este README é o **manual de execução**. Para os demais documentos exigidos pe
 - [docs/QA_GUIDE.md](docs/QA_GUIDE.md) — estratégia de qualidade e como um agente de IA deve rodar/validar os testes.
 - [docs/TEST_EXECUTION_LOG.md](docs/TEST_EXECUTION_LOG.md) — registro real das execuções de teste feitas com apoio de IA durante o desenvolvimento.
 - [NOTES.md](NOTES.md) — premissas assumidas, decisões técnicas e limitações conhecidas.
+- [docs/PROJECT_BRIEF.md](docs/PROJECT_BRIEF.md) — reconstrução sanitizada do prompt de kickoff do projeto, como exemplo de engenharia de prompt.
 
 ## Pré-requisitos
 
@@ -75,17 +76,20 @@ Configuração via `.env` (veja [.env.example](.env.example) para a lista comple
 - Migrations versionadas com **Flyway**, em [backend/src/main/resources/db/migration](backend/src/main/resources/db/migration):
   - `V1__init.sql`: cria as tabelas `veiculo`, `cliente` e `oportunidade`.
   - `V2__seed.sql`: insere alguns registros de exemplo (8 veículos, 6 clientes, 6 oportunidades) para o dashboard e as listagens não nascerem vazios.
+  - `V3__oportunidade_historico.sql`: cria a tabela de histórico de mudanças de status da oportunidade (ver seção de API abaixo).
 - As migrations rodam automaticamente na subida do backend (`spring.flyway.enabled=true`), sem passo manual.
 
 ## Estrutura do repositório
 
 ```
 .
-├── backend/          # API Spring Boot (Java 21)
-├── frontend/          # SPA Angular (Angular Material)
-├── docker-compose.yml # Orquestração dos 3 serviços (db, backend, frontend)
-├── .env.example       # Template de variáveis de ambiente
-└── docs/               # Documentação para agentes de IA (dev e QA)
+├── backend/            # API Spring Boot (Java 21)
+├── frontend/           # SPA Angular (Angular Material)
+│   └── e2e/             # Testes E2E (Playwright), rodam contra a stack real
+├── .github/workflows/  # Pipeline de CI (GitHub Actions)
+├── docker-compose.yml  # Orquestração dos 3 serviços (db, backend, frontend)
+├── .env.example         # Template de variáveis de ambiente
+└── docs/                 # Documentação para agentes de IA (dev e QA)
 ```
 
 ## Rodando localmente sem Docker (opcional, para desenvolvimento)
@@ -114,14 +118,24 @@ Sobe em http://localhost:4200 apontando por padrão para `http://localhost:8080`
 ### Rodando os testes
 
 ```bash
-# Backend
+# Backend - testes unitarios + de contexto (H2, nao precisa de Docker)
 cd backend && ./mvnw test
 
-# Frontend
+# Backend - inclui tambem um teste de integracao contra PostgreSQL real via
+# Testcontainers, que roda automaticamente se o Docker estiver acessivel ao
+# Testcontainers no seu ambiente (pula de forma limpa caso nao esteja - ver
+# docs/TEST_EXECUTION_LOG.md secao 5.2 para um caso real desse cenario)
+
+# Frontend - testes unitarios
 cd frontend && npm test
+
+# Frontend - testes E2E (Playwright), precisa da stack rodando via Docker Compose
+docker compose up --build -d
+cd frontend && npx playwright install --with-deps chromium   # so na primeira vez
+npm run e2e
 ```
 
-Ver [docs/QA_GUIDE.md](docs/QA_GUIDE.md) para a estratégia completa de testes e [docs/TEST_EXECUTION_LOG.md](docs/TEST_EXECUTION_LOG.md) para o resultado real dessas execuções durante o desenvolvimento.
+Ver [docs/QA_GUIDE.md](docs/QA_GUIDE.md) para a estratégia completa de testes e [docs/TEST_EXECUTION_LOG.md](docs/TEST_EXECUTION_LOG.md) para o resultado real dessas execuções durante o desenvolvimento. O pipeline de CI (`.github/workflows/ci.yml`) roda todas essas suítes automaticamente a cada push.
 
 ## Troubleshooting
 
@@ -129,3 +143,4 @@ Ver [docs/QA_GUIDE.md](docs/QA_GUIDE.md) para a estratégia completa de testes e
 - **`docker compose up` falha na primeira vez com erro de rede/DNS ao baixar imagens**: verifique a conexão com a internet; as imagens base (`postgres:16-alpine`, `node:22-alpine`, `eclipse-temurin`, `nginx:1.27-alpine`) precisam ser baixadas na primeira execução.
 - **Frontend sobe mas não carrega dados**: confirme que `API_URL` no `.env` aponta para uma URL acessível pelo seu navegador (não `http://backend:8080`, que só existe na rede interna do Docker).
 - **Quero recomeçar do zero**: `docker compose down -v` remove containers e o volume do banco.
+- **O teste `CrmCarrosPostgresIntegrationTest` (Testcontainers) é pulado no meu ambiente**: alguns Docker Desktop muito recentes têm uma incompatibilidade conhecida com a checagem de disponibilidade do Testcontainers (detalhes reais em [docs/TEST_EXECUTION_LOG.md](docs/TEST_EXECUTION_LOG.md), seção 5.2). O teste detecta isso e pula de forma limpa em vez de quebrar a build; os demais testes do backend não são afetados.

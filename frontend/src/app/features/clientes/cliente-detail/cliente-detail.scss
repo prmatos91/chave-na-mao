@@ -1,0 +1,15 @@
+.title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.detail-card {
+  padding: 1.5rem !important;
+  max-width: 720px;
+}

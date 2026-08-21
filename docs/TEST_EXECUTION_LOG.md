@@ -193,14 +193,116 @@ Realizada navegando pela aplicação real (Docker Compose rodando) via automaç�
 **Correção**: registrado `localePt` (`@angular/common/locales/pt`) e configurado `{ provide: LOCALE_ID, useValue: 'pt-BR' }` em `app.config.ts`.
 **Verificação da correção**: rebuild da imagem do frontend (`docker compose build frontend && docker compose up -d frontend`) e nova verificação visual confirmando `R$ 145.900,00` corretamente formatado, com os dados do Postgres preservados no volume durante o rebuild.
 
-## 5. Resumo
+## 5. Fase 2 — auditoria adicional e melhorias pedidas depois da primeira entrega
+
+Depois da primeira rodada (seções 1-4), foi pedido uma auditoria mais profunda do projeto já funcionando, testando comportamento real (não só lendo código), e um conjunto de melhorias adicionais. Esta seção documenta essa segunda rodada, incluindo os problemas reais encontrados.
+
+### 5.1 Auditoria manual — testando comportamento real da API já rodando
+
+Com a stack já de pé via `docker compose up --build -d`, foram feitos testes diretos de comportamento (não apenas leitura de código):
+
+```bash
+curl -s -w "\nHTTP_STATUS=%{http_code}\n" http://localhost:8080/api/veiculos/abc
+# HTTP_STATUS=500  <- deveria ser 400 (id invalido e erro do cliente, nao do servidor)
+
+curl -s -D - -o /dev/null http://localhost:8080/api/dashboard
+# nenhum header X-Content-Type-Options, X-Frame-Options ou Referrer-Policy
+
+curl -s -D - -o /dev/null -H "Origin: http://evil.com" http://localhost:8080/api/veiculos
+# HTTP/1.1 403  <- CORS bloqueando origem nao autorizada, confirmado correto
+```
+
+**4 problemas reais encontrados e corrigidos:**
+
+1. `GET /api/veiculos/abc` retornava 500 em vez de 400 — faltava `@ExceptionHandler(MethodArgumentTypeMismatchException.class)`. Corrigido e coberto por um novo teste (`VeiculoControllerWebTest`, usando `MockMvcBuilders.standaloneSetup`).
+2. O handler genérico de exceções não logava nada no servidor — adicionado `log.error(...)` antes de responder ao cliente (nunca expondo o detalhe na resposta).
+3. Faltavam headers de segurança HTTP — adicionado um `SecurityHeadersFilter` no backend e `add_header` no `nginx.conf` do frontend (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, mais `server_tokens off`).
+4. Condição de corrida no e-mail duplicado do cliente — `ClienteService.criar`/`atualizar` agora tratam `DataIntegrityViolationException` do `saveAndFlush`, convertendo para 409 em vez de deixar virar 500. Ao implementar a correção, um teste (`criar_comEmailInedito_deveSalvarComSucesso`) quebrou porque o metodo auxiliar retornava a entidade original (sem o id gerado) em vez do resultado de `saveAndFlush` — bug introduzido na hora e corrigido antes de seguir.
+
+Verificação ao vivo depois do rebuild (`docker compose up --build -d backend`):
+
+```
+GET /api/veiculos/abc -> 400 {"message":"Parametro 'id' invalido..."}
+Headers: X-Content-Type-Options: nosniff / X-Frame-Options: DENY / Referrer-Policy: no-referrer-when-downgrade
+POST /api/clientes (email duplicado) -> 409 {"message":"Ja existe um cliente cadastrado..."}
+```
+
+### 5.2 Testcontainers — tentativa de validar contra PostgreSQL real
+
+Foi adicionado um teste de integração (`CrmCarrosPostgresIntegrationTest`) usando Testcontainers para rodar as migrations e o mapeamento JPA contra um PostgreSQL real (não H2), fechando a lacuna documentada na primeira entrega.
+
+**Resultado real, não o esperado**: o teste falhou com `IllegalStateException: Could not find a valid Docker environment`, mesmo com o Docker funcionando perfeitamente (confirmado rodando `docker compose` normalmente ao mesmo tempo). Investigação:
+
+```bash
+curl -s --unix-socket /var/run/docker.sock http://localhost/v1.24/info   # HTTP 400, corpo vazio/zerado
+curl -s --unix-socket /var/run/docker.sock http://localhost/v1.40/info   # HTTP 200, dados reais
+curl -s --unix-socket /var/run/docker.sock http://localhost/info         # HTTP 200 (sem versionar), dados reais
+```
+
+**Causa raiz identificada**: o Docker Desktop instalado (4.87.0 / Engine 29.7.2, API 1.55, `MinAPIVersion: 1.40`) responde com um HTTP 400 malformado para chamadas usando versões da API do Docker abaixo de 1.40. A checagem interna de disponibilidade do Testcontainers 1.21.3 (a versão mais recente publicada no Maven Central no momento desta entrega) usa uma API antiga nessa checagem especifica, incompativel com essa versao do Docker Desktop. Setar a variavel `DOCKER_API_VERSION=1.43` no ambiente nao resolveu, porque a checagem de disponibilidade acontece antes de qualquer negociacao de versao configuravel.
+
+**Decisão tomada**: em vez de simplesmente descartar o teste (que é real e correto), ele foi reescrito para checar `DockerClientFactory.instance().isDockerAvailable()` num `@BeforeAll` e pular a classe de forma limpa (`Assumptions.assumeTrue`) quando o Docker não estiver acessível ao Testcontainers nesse ambiente especifico — sem quebrar `mvnw test`. Isso é uma limitação de ambiente desta máquina de desenvolvimento (Docker Desktop bleeding-edge), não do código: o teste deve funcionar normalmente em ambientes com Docker Engine "puro" (como os runners do GitHub Actions, que não passam pela camada de proxy do Docker Desktop) — algo que será confirmado na primeira execução real do CI após o push.
+
+```
+[INFO] Tests run: 0, Failures: 0, Errors: 0, Skipped: 0 -- in CrmCarrosPostgresIntegrationTest
+[INFO] BUILD SUCCESS (15 outros testes passando normalmente)
+```
+
+### 5.3 Histórico de status da oportunidade
+
+Nova migration (`V3__oportunidade_historico.sql`), entidade, repositório e endpoint `GET /api/oportunidades/{id}/historico`. Testado ao vivo:
+
+```bash
+curl -s http://localhost:8080/api/oportunidades/1/historico
+# [{"id":1,"statusAnterior":null,"statusNovo":"EM_NEGOCIACAO","alteradoEm":"2026-08-21T23:03:48Z"}]
+```
+
+Editada a oportunidade #1 pela UI (status "Em negociação" → "Vendido") e confirmado visualmente que: (a) uma nova entrada apareceu na timeline com o texto "Em negociação → Vendido"; (b) o veículo associado (Honda HR-V) passou automaticamente para "Vendido" na sua própria página de detalhe — a regra de negócio documentada continua funcionando após a mudança de modal para rota.
+
+Testes de service adicionados (`OportunidadeServiceTest`): status inicial gravado na criação, mudança de status gera entrada de histórico, ausência de mudança de status **não** gera entrada. Todos passando.
+
+### 5.4 Frontend — troca de modal por rotas de detalhe
+
+Os 3 diálogos de detalhe (`*-detail-dialog`) foram removidos e substituídos por páginas roteadas (`/veiculos/:id`, `/clientes/:id`, `/oportunidades/:id`), com a página de oportunidade incluindo a timeline do histórico. `ng build` e `ng test` confirmados passando (11/11) depois da troca — nenhuma regressão de tipagem, já que o padrão `@if (sinal(); as x)` do Angular tipa `x` corretamente (diferente da limitação já documentada do `*matCellDef` nas tabelas).
+
+### 5.5 Testes E2E automatizados (Playwright)
+
+Foram escritos 7 testes E2E (`frontend/e2e/*.spec.ts`) rodando contra a stack real via Docker Compose, cobrindo: dashboard, navegação pelo menu, CRUD completo de veículo (criar → visualizar → editar → excluir), validação de formulário vazio, CRUD de cliente, bloqueio de e-mail duplicado, e o fluxo de ponta a ponta da regra de negócio (criar oportunidade como "Vendido" → conferir que o veículo vinculado aparece como "Vendido" na tela dele → conferir a timeline).
+
+**Falhas reais encontradas ao rodar pela primeira vez:**
+
+1. **3 de 7 testes falharam por timeout** logo na primeira execução — os seletores `getByLabel('Visualizar'|'Editar'|'Excluir')` não encontravam nada. Causa: os `aria-label` tinham acabado de ser adicionados aos botões de ícone das listagens (também uma melhoria real de acessibilidade, não só para os testes), mas o container Docker do frontend ainda estava com o build anterior — esquecimento de rodar `docker compose up --build -d frontend` antes de rodar os testes E2E. Corrigido rebuildando o container.
+2. **Depois do rebuild, o teste de oportunidade ainda falhava** na etapa de limpeza (exclusão dos dados criados pelo próprio teste), com um botão "Excluir" errado sendo clicado (ficava atrás do overlay escurecido do diálogo, sem conseguir clicar). Causa: o seletor `getByRole('button', { name: 'Excluir' }).last()` é ambíguo quando existem várias linhas com botão de excluir na tela **e** o diálogo de confirmação aberto — `.last()` nem sempre resolve para o botão do diálogo. Corrigido trocando para `page.getByRole('dialog').getByRole('button', { name: 'Excluir' })`, escopado corretamente ao diálogo modal (Angular Material define `role="dialog"` no container).
+3. Mesmo com o seletor corrigido, a limpeza da oportunidade criada pelo teste **passava sem erro mas não excluía nada de fato** — o registro ficava numa página de listagem diferente da primeira (paginação padrão de 10 itens), já que o teste não filtrava a lista de oportunidades antes de tentar excluir. Corrigido usando o filtro por cliente já existente na tela antes de excluir, e adicionadas asserções explícitas da mensagem de sucesso em cada exclusão da limpeza, para que qualquer falha futura apareça como um erro claro em vez de passar silenciosamente.
+
+Resultado final, real, depois das 3 correções acima (log completo em [test-logs/e2e-playwright-run-final.log](test-logs/e2e-playwright-run-final.log)):
+
+```
+Running 7 tests using 1 worker
+  ✓ Clientes - cria e exclui um cliente
+  ✓ Clientes - bloqueia cadastro com e-mail ja utilizado
+  ✓ Dashboard - carrega e mostra os indicadores principais
+  ✓ Dashboard - navega para as demais telas pelo menu lateral
+  ✓ Oportunidades - Vendido marca o veiculo associado como Vendido automaticamente
+  ✓ Veiculos - cria, visualiza, edita e exclui um veiculo
+  ✓ Veiculos - exibe erro de validacao ao tentar salvar formulario vazio
+
+  7 passed (8.3s)
+```
+
+Confirmado via API (`GET /api/dashboard`) que os dados criados pelos testes foram completamente removidos ao final, sem deixar resíduo no ambiente.
+
+## 6. Resumo geral
 
 | Suíte | Execuções até passar | Falhas reais encontradas |
 |---|---|---|
-| Backend `mvnw test` | 1ª após corrigir versão do Spring Boot no build | versão incorreta do parent POM |
-| Frontend `ng build` | 2 | dependência de animações ausente; tipagem `any` em `*matCellDef` |
-| Frontend `ng test` | 2 | matchers Jasmine incompatíveis com Vitest |
-| `docker compose up --build` | 2 | healthcheck do frontend usando `localhost` (resolvia para IPv6, Nginx só escutava IPv4) |
-| Verificação manual (browser) | 1 rodada, 1 bug encontrado | locale de formatação de moeda/número |
+| Backend `mvnw test` (Fase 1) | 1ª após corrigir versão do Spring Boot no build | versão incorreta do parent POM |
+| Frontend `ng build` (Fase 1) | 2 | dependência de animações ausente; tipagem `any` em `*matCellDef` |
+| Frontend `ng test` (Fase 1) | 2 | matchers Jasmine incompatíveis com Vitest |
+| `docker compose up --build` (Fase 1) | 2 | healthcheck do frontend usando `localhost` (resolvia para IPv6, Nginx só escutava IPv4) |
+| Verificação manual browser (Fase 1) | 1 rodada, 1 bug encontrado | locale de formatação de moeda/número |
+| Auditoria manual da API (Fase 2) | 1 rodada, 4 bugs encontrados | 500 em id invalido; sem log de erro; sem headers de seguranca; race condition no e-mail |
+| Testcontainers (Fase 2) | Bloqueado neste ambiente, contornado | incompatibilidade Docker Desktop 29.x x Testcontainers 1.21.3 |
+| Playwright E2E (Fase 2) | 3 | build desatualizado no container; seletor `.last()` ambiguo; paginacao escondendo registro criado |
 
-Todas as falhas listadas foram reais (não simuladas), encontradas ao executar os comandos durante o desenvolvimento assistido por IA, e corrigidas antes da entrega.
+Todas as falhas listadas foram reais (não simuladas), encontradas ao executar os comandos durante o desenvolvimento assistido por IA, e corrigidas (ou contornadas de forma documentada, no caso do Testcontainers) antes da entrega.

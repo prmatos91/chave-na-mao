@@ -1,0 +1,45 @@
+@if (carregando()) {
+  <div class="empty-state">
+    <mat-spinner diameter="32" />
+  </div>
+} @else if (cliente(); as c) {
+  <div class="page-header">
+    <div class="title-row">
+      <button mat-icon-button routerLink="/clientes" aria-label="Voltar">
+        <mat-icon>arrow_back</mat-icon>
+      </button>
+      <h1>{{ c.nome }}</h1>
+    </div>
+    <div class="actions">
+      <button mat-stroked-button [routerLink]="['/clientes', c.id, 'editar']">
+        <mat-icon>edit</mat-icon>
+        Editar
+      </button>
+      <button mat-stroked-button color="warn" (click)="excluir()">
+        <mat-icon>delete</mat-icon>
+        Excluir
+      </button>
+    </div>
+  </div>
+
+  <mat-card class="detail-card">
+    <dl class="detail-grid">
+      <div>
+        <dt>E-mail</dt>
+        <dd>{{ c.email }}</dd>
+      </div>
+      <div>
+        <dt>Telefone</dt>
+        <dd>{{ c.telefone }}</dd>
+      </div>
+      <div>
+        <dt>Interesse principal</dt>
+        <dd>{{ interesseLabels[c.interessePrincipal] }}</dd>
+      </div>
+      <div>
+        <dt>Cadastrado em</dt>
+        <dd>{{ c.createdAt | date: 'dd/MM/yyyy HH:mm' }}</dd>
+      </div>
+    </dl>
+  </mat-card>
+}

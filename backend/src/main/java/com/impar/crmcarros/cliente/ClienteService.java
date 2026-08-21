@@ -42,7 +42,7 @@ public class ClienteService {
 
     public ClienteResponse criar(ClienteRequest request) {
         validarEmailDisponivel(request.email(), null);
-        Cliente cliente = repository.save(ClienteMapper.toEntity(request));
+        Cliente cliente = salvarTratandoEmailDuplicado(ClienteMapper.toEntity(request));
         return ClienteMapper.toResponse(cliente);
     }
 
@@ -50,7 +50,20 @@ public class ClienteService {
         Cliente cliente = buscarEntidadePorId(id);
         validarEmailDisponivel(request.email(), id);
         ClienteMapper.updateEntity(cliente, request);
-        return ClienteMapper.toResponse(repository.save(cliente));
+        return ClienteMapper.toResponse(salvarTratandoEmailDuplicado(cliente));
+    }
+
+    /**
+     * A checagem de {@link #validarEmailDisponivel} evita a maioria dos casos, mas nao
+     * fecha uma corrida de concorrencia entre duas requisicoes simultaneas com o mesmo
+     * e-mail; a constraint UNIQUE do banco e a rede de seguranca final para esse caso.
+     */
+    private Cliente salvarTratandoEmailDuplicado(Cliente cliente) {
+        try {
+            return repository.saveAndFlush(cliente);
+        } catch (DataIntegrityViolationException ex) {
+            throw new BusinessRuleException("Ja existe um cliente cadastrado com o e-mail " + cliente.getEmail());
+        }
     }
 
     public void excluir(Long id) {

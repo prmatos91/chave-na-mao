@@ -1,10 +1,12 @@
 package com.impar.crmcarros.oportunidade;
 
+import com.impar.crmcarros.oportunidade.dto.OportunidadeHistoricoResponse;
 import com.impar.crmcarros.oportunidade.dto.OportunidadeRequest;
 import com.impar.crmcarros.oportunidade.dto.OportunidadeResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -40,6 +42,11 @@ public class OportunidadeController {
     @GetMapping("/{id}")
     public OportunidadeResponse buscarPorId(@PathVariable Long id) {
         return service.buscarPorId(id);
+    }
+
+    @GetMapping("/{id}/historico")
+    public List<OportunidadeHistoricoResponse> listarHistorico(@PathVariable Long id) {
+        return service.listarHistorico(id);
     }
 
     @PostMapping

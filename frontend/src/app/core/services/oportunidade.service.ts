@@ -1,7 +1,12 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import { Oportunidade, OportunidadeRequest, StatusOportunidade } from '../models/oportunidade.model';
+import {
+  Oportunidade,
+  OportunidadeHistorico,
+  OportunidadeRequest,
+  StatusOportunidade,
+} from '../models/oportunidade.model';
 import { Page } from '../models/page.model';
 import { RuntimeConfigService } from './runtime-config.service';
 
@@ -34,6 +39,10 @@ export class OportunidadeService {
 
   buscarPorId(id: number): Observable<Oportunidade> {
     return this.http.get<Oportunidade>(`${this.baseUrl}/${id}`);
+  }
+
+  buscarHistorico(id: number): Observable<OportunidadeHistorico[]> {
+    return this.http.get<OportunidadeHistorico[]>(`${this.baseUrl}/${id}/historico`);
   }
 
   criar(request: OportunidadeRequest): Observable<Oportunidade> {

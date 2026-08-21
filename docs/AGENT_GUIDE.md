@@ -66,6 +66,15 @@ erDiagram
         numeric valor_proposto
         text observacoes
     }
+
+    OPORTUNIDADE ||--o{ OPORTUNIDADE_HISTORICO : possui
+    OPORTUNIDADE_HISTORICO {
+        bigint id PK
+        bigint oportunidade_id FK
+        enum status_anterior
+        enum status_novo
+        timestamp alterado_em
+    }
 ```
 
 ### Veículo (`backend/.../veiculo`)
@@ -103,7 +112,11 @@ O e-mail é validado como único tanto pela aplicação (`ClienteService.validar
 
 **Regra de negócio central do sistema** (`OportunidadeService.aplicarEfeitoColateralDeVenda`): quando uma oportunidade é criada ou atualizada com status `VENDIDO`, o veículo associado é **automaticamente marcado como `VENDIDO`** no mesmo fluxo, refletindo a baixa no estoque. Essa é uma premissa de negócio assumida pelo desenvolvedor (não estava explicitada no desafio) e está documentada aqui de propósito — qualquer agente que for alterar o fluxo de oportunidades precisa saber que essa consequência existe e não deve ser removida sem uma decisão consciente. O inverso (voltar o veículo para `DISPONIVEL` se a oportunidade deixar de estar `VENDIDO`) **não** é implementado — é uma limitação conhecida, ver [NOTES.md](../NOTES.md).
 
-Excluir uma oportunidade não tem efeitos colaterais sobre cliente/veículo.
+Excluir uma oportunidade não tem efeitos colaterais sobre cliente/veículo (mas exclui em cascata o próprio histórico dela, via `ON DELETE CASCADE`).
+
+### Histórico de status da oportunidade (`OportunidadeHistorico`)
+
+Toda vez que uma oportunidade é criada, ou tem seu `status` alterado numa edição, uma entrada é gravada em `oportunidade_historico` (`status_anterior` nulo na criação, preenchido nas mudanças seguintes). É uma auditoria enxuta e deliberadamente escopada só ao status da oportunidade (o funil de vendas) — não é um audit log genérico de todos os campos de todas as entidades, o que seria escopo desproporcional ao pedido do desafio. Exposto via `GET /api/oportunidades/{id}/historico`, consumido pela timeline na tela de detalhe da oportunidade no frontend. Ver `OportunidadeService.registrarHistorico`.
 
 ## 3. Arquitetura
 
@@ -130,11 +143,13 @@ Ao adicionar um novo campo ou uma nova entidade, siga exatamente esse padrão �
 
 Por que DTOs separados da entidade e mapeamento manual (sem MapStruct)? Para manter o projeto sem dependências extras de geração de código, dado o escopo do desafio; ficou explícito e fácil de auditar. Isso é uma escolha deliberada, não uma omissão.
 
-**Tratamento de erros**: centralizado em `common/exception/GlobalExceptionHandler.java`. Toda exceção de negócio deve estender `BusinessRuleException` (mapeada para 409) ou usar `ResourceNotFoundException` (404). Nunca deixe uma exceção "vazar" sem handler — o objetivo é nunca expor stack trace ou detalhes internos ao cliente (requisito de segurança mínima do desafio).
+**Tratamento de erros**: centralizado em `common/exception/GlobalExceptionHandler.java`. Toda exceção de negócio deve estender `BusinessRuleException` (mapeada para 409) ou usar `ResourceNotFoundException` (404). Erros de tipo/formato de parâmetro (`MethodArgumentTypeMismatchException`, `HttpMessageNotReadableException`) viram 400, nunca 500 — um id não numérico na URL, por exemplo, é erro do cliente, não do servidor. Nunca deixe uma exceção "vazar" sem handler — o objetivo é nunca expor stack trace ou detalhes internos ao cliente (requisito de segurança mínima do desafio), mas todo erro 5xx é logado no servidor (`log.error`) antes de responder, para não perder rastreabilidade.
+
+**Segurança HTTP**: `config/SecurityHeadersFilter.java` adiciona `X-Content-Type-Options`, `X-Frame-Options` e `Referrer-Policy` em toda resposta da API (o Nginx do frontend faz o mesmo para os arquivos estáticos, em `frontend/docker/nginx.conf`). Se adicionar Spring Security no futuro, esses headers passam a ser responsabilidade dele — remova o filtro manual para não duplicar.
 
 **Migrations**: Flyway, arquivos versionados em `src/main/resources/db/migration`. Uma alteração de schema = um novo arquivo `V<n>__descricao.sql`. Nunca edite uma migration já aplicada — crie uma nova.
 
-**Testes**: Mockito para os services (sem subir contexto Spring, rápido). O teste de contexto (`CrmCarrosBackendApplicationTests`) sobe o Spring Boot inteiro contra **H2 em modo PostgreSQL** (`src/test/resources/application.yml`), rodando as mesmas migrations Flyway do ambiente real — isso valida que as entidades JPA batem com o schema migrado. H2 foi escolhido para os testes automatizados não dependerem de Docker/Postgres rodando; é uma aproximação, não uma garantia 100% idêntica ao Postgres real (ver limitações no QA_GUIDE).
+**Testes**: Mockito para os services (sem subir contexto Spring, rápido). O teste de contexto (`CrmCarrosBackendApplicationTests`) sobe o Spring Boot inteiro contra **H2 em modo PostgreSQL** (`src/test/resources/application.yml`), rodando as mesmas migrations Flyway do ambiente real — isso valida que as entidades JPA batem com o schema migrado. H2 foi escolhido para os testes automatizados não dependerem de Docker/Postgres rodando; é uma aproximação, não uma garantia 100% idêntica ao Postgres real. Para fechar essa lacuna, existe também `CrmCarrosPostgresIntegrationTest`, que sobe um PostgreSQL real via **Testcontainers** — ele pula a si mesmo de forma limpa (`Assumptions`) se o Docker não estiver acessível ao Testcontainers no ambiente (aconteceu de verdade em uma máquina de desenvolvimento com Docker Desktop muito recente; ver `docs/TEST_EXECUTION_LOG.md` seção 5.2), então não trate um "0 tests run" nessa classe como falha — confira se é um skip por indisponibilidade de Docker antes de investigar mais.
 
 ### Frontend — `frontend/src/app/`
 
@@ -145,22 +160,24 @@ app/
 │   ├── services/       # um HttpClient service por entidade + dashboard + runtime config + notification
 │   └── interceptors/    # error.interceptor.ts: toda falha HTTP vira um snackbar de erro
 ├── shared/
-│   ├── components/confirm-dialog/  # dialogo de confirmacao generico, usado antes de qualquer exclusao
+│   ├── components/confirm-dialog/  # unico uso restante de MatDialog: confirmacao antes de excluir
 │   └── utils/labels.ts              # mapas enum -> label em portugues e enum -> classe CSS de cor
 └── features/
     ├── dashboard/
-    ├── veiculos/{veiculo-list,veiculo-form,veiculo-detail-dialog}/
-    ├── clientes/{cliente-list,cliente-form,cliente-detail-dialog}/
-    └── oportunidades/{oportunidade-list,oportunidade-form,oportunidade-detail-dialog}/
+    ├── veiculos/{veiculo-list,veiculo-form,veiculo-detail}/
+    ├── clientes/{cliente-list,cliente-form,cliente-detail}/
+    └── oportunidades/{oportunidade-list,oportunidade-form,oportunidade-detail}/
 ```
 
-Padrão de feature: `standalone components`, roteamento lazy-loaded (`app.routes.ts`), Reactive Forms, Angular Material. Toda listagem tem: filtro + paginação (`MatPaginator`) + tabela (`MatTable`) + ação de visualizar (abre `*-detail-dialog` em `MatDialog`) + editar (navega para `*-form`) + excluir (abre `ConfirmDialog` antes).
+Padrão de feature: `standalone components`, roteamento lazy-loaded (`app.routes.ts`), Reactive Forms, Angular Material. Toda listagem tem: filtro + paginação (`MatPaginator`) + tabela (`MatTable`) + ação de visualizar (navega para `*-detail`, uma **rota própria**, ex. `/veiculos/:id`) + editar (navega para `*-form`) + excluir (abre `ConfirmDialog` antes).
 
-**Por que os detalhes ficam em modal e não em rota própria?** O desafio permite explicitamente essa abordagem ("pode ser feita em uma tela específica, modal, drawer..."); modal foi escolhido para reduzir a quantidade de rotas e manter o usuário no contexto da listagem.
+**Por que os detalhes viraram rota própria e não ficaram em modal?** O desafio permite explicitamente as duas abordagens ("pode ser feita em uma tela específica, modal, drawer..."). A primeira versão usava modal (menos rotas, mantém o contexto da listagem); depois trocada para rota própria por decisão consciente de UX/arquitetura — permite link direto para um registro, funciona com o botão voltar do navegador, e a tela de detalhe da oportunidade precisava de espaço para a timeline de histórico, que não cabia bem num modal. Ao adicionar uma nova entidade, siga o padrão de rota própria (`<entidade>-detail/`), não modal.
 
 **Configuração de API em runtime**: o frontend é buildado uma única vez e a URL da API é injetada em runtime via `frontend/public/env.js` (dev) ou gerado dinamicamente pelo entrypoint do container Nginx a partir da variável `API_URL` (produção/Docker) — ver `frontend/docker/docker-entrypoint.sh`. Nunca hardcode a URL da API em um service; sempre use `RuntimeConfigService`.
 
 **Locale**: a aplicação inteira usa `LOCALE_ID = 'pt-BR'` (registrado em `app.config.ts`), então os pipes `currency`/`number`/`date` já formatam em português/BRL por padrão sem precisar passar locale manualmente em cada uso.
+
+**Testes E2E**: `frontend/e2e/*.spec.ts` (Playwright), rodam contra a stack real via Docker Compose (não contra `ng serve`/mocks) — cobrem os fluxos de CRUD completo e a regra de negócio de venda. Ao adicionar uma tela ou fluxo novo relevante, adicione um teste E2E cobrindo o caminho feliz; ver `docs/QA_GUIDE.md` para o comando de execução.
 
 **Limitação de tipagem conhecida**: nas tabelas (`MatTable`), o parâmetro de `*matCellDef="let row"` não é inferido como o tipo genérico da linha nesta versão do Angular Material (fica `any`), então indexar um `Record<Enum, string>` diretamente no template causa erro de compilação (`TS7053`). A solução adotada em todo o projeto é expor métodos tipados no componente (`statusLabel(status)`, `statusClass(status)`) e chamá-los do template em vez de indexar o Record diretamente. Siga esse padrão em qualquer tabela nova.
 
@@ -170,7 +187,7 @@ Padrão de feature: `standalone components`, roteamento lazy-loaded (`app.routes
 1. Nova migration `V3__add_placa_veiculo.sql` no backend.
 2. Adicionar o campo em `Veiculo.java`, `VeiculoRequest.java`, `VeiculoResponse.java`, `VeiculoMapper.java`.
 3. Adicionar o campo em `veiculo.model.ts` (`Veiculo` e `VeiculoRequest`).
-4. Adicionar o campo no formulário (`veiculo-form.ts`/`.html`) e, se fizer sentido, na listagem e no dialog de detalhes.
+4. Adicionar o campo no formulário (`veiculo-form.ts`/`.html`) e, se fizer sentido, na listagem e na página de detalhe (`veiculo-detail/`).
 5. Atualizar/adicionar testes de service (backend) e de formulário (frontend).
 
 **Adicionar uma nova entidade**: replicar a estrutura de pacotes descrita na seção 3 (backend e frontend), adicionar a rota lazy em `app.routes.ts`, adicionar o link no menu (`app.ts`/`app.html`), e uma migration para a tabela nova.
@@ -181,6 +198,7 @@ Padrão de feature: `standalone components`, roteamento lazy-loaded (`app.routes
 
 Ver a lista completa e o racional em [NOTES.md](../NOTES.md). As mais relevantes para quem for mexer no código:
 
-- Sem autenticação/autorização (fora do escopo mínimo do desafio).
+- Sem autenticação/autorização (fora do escopo mínimo do desafio; decisão consciente, ver NOTES.md).
 - Um veículo pode ter várias oportunidades ao longo do tempo (histórico de negociações), mesmo depois de vendido — o sistema não impede criar uma nova oportunidade para um veículo já `VENDIDO`; isso é intencional (ex.: renegociação), mas fica registrado aqui para não ser "corrigido" por engano.
 - Preços e valores em Real (BRL), sem suporte a outras moedas.
+- Auditoria (histórico) escopada apenas ao status da oportunidade — não é um audit log genérico de todas as entidades/campos.

@@ -45,7 +45,7 @@ class ClienteServiceTest {
     @Test
     void criar_comEmailInedito_deveSalvarComSucesso() {
         when(repository.findByEmailIgnoreCase("ana.souza@example.com")).thenReturn(Optional.empty());
-        when(repository.save(any(Cliente.class))).thenReturn(clienteExistente());
+        when(repository.saveAndFlush(any(Cliente.class))).thenReturn(clienteExistente());
 
         ClienteResponse response = service.criar(requestValido());
 
@@ -61,7 +61,7 @@ class ClienteServiceTest {
                 .isInstanceOf(BusinessRuleException.class)
                 .hasMessageContaining("ana.souza@example.com");
 
-        verify(repository, never()).save(any());
+        verify(repository, never()).saveAndFlush(any());
     }
 
     @Test
@@ -69,11 +69,22 @@ class ClienteServiceTest {
         Cliente existente = clienteExistente();
         when(repository.findById(1L)).thenReturn(Optional.of(existente));
         when(repository.findByEmailIgnoreCase("ana.souza@example.com")).thenReturn(Optional.of(existente));
-        when(repository.save(any(Cliente.class))).thenReturn(existente);
+        when(repository.saveAndFlush(any(Cliente.class))).thenReturn(existente);
 
         ClienteResponse response = service.atualizar(1L, requestValido());
 
         assertThat(response.id()).isEqualTo(1L);
+    }
+
+    @Test
+    void criar_comCorridaDeConcorrenciaNoEmail_deveConverterParaBusinessRuleException() {
+        when(repository.findByEmailIgnoreCase("ana.souza@example.com")).thenReturn(Optional.empty());
+        when(repository.saveAndFlush(any(Cliente.class)))
+                .thenThrow(new org.springframework.dao.DataIntegrityViolationException("unique constraint violado"));
+
+        assertThatThrownBy(() -> service.criar(requestValido()))
+                .isInstanceOf(BusinessRuleException.class)
+                .hasMessageContaining("ana.souza@example.com");
     }
 
     @Test

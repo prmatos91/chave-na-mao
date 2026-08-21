@@ -21,3 +21,10 @@ export interface OportunidadeRequest {
   valorProposto: number | null;
   observacoes: string | null;
 }
+
+export interface OportunidadeHistorico {
+  id: number;
+  statusAnterior: StatusOportunidade | null;
+  statusNovo: StatusOportunidade;
+  alteradoEm: string;
+}

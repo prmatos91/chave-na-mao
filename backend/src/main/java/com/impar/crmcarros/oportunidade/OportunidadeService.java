@@ -3,6 +3,7 @@ package com.impar.crmcarros.oportunidade;
 import com.impar.crmcarros.cliente.Cliente;
 import com.impar.crmcarros.cliente.ClienteRepository;
 import com.impar.crmcarros.common.exception.ResourceNotFoundException;
+import com.impar.crmcarros.oportunidade.dto.OportunidadeHistoricoResponse;
 import com.impar.crmcarros.oportunidade.dto.OportunidadeRequest;
 import com.impar.crmcarros.oportunidade.dto.OportunidadeResponse;
 import com.impar.crmcarros.veiculo.StatusVeiculo;
@@ -29,6 +30,7 @@ import java.util.List;
 public class OportunidadeService {
 
     private final OportunidadeRepository repository;
+    private final OportunidadeHistoricoRepository historicoRepository;
     private final ClienteRepository clienteRepository;
     private final VeiculoRepository veiculoRepository;
 
@@ -66,12 +68,14 @@ public class OportunidadeService {
                 .build();
 
         oportunidade = repository.save(oportunidade);
+        registrarHistorico(oportunidade, null, oportunidade.getStatus());
         aplicarEfeitoColateralDeVenda(oportunidade);
         return OportunidadeMapper.toResponse(oportunidade);
     }
 
     public OportunidadeResponse atualizar(Long id, OportunidadeRequest request) {
         Oportunidade oportunidade = buscarEntidadePorId(id);
+        StatusOportunidade statusAnterior = oportunidade.getStatus();
 
         if (!oportunidade.getCliente().getId().equals(request.clienteId())) {
             oportunidade.setCliente(buscarClientePorId(request.clienteId()));
@@ -84,6 +88,9 @@ public class OportunidadeService {
         oportunidade.setObservacoes(request.observacoes());
 
         oportunidade = repository.save(oportunidade);
+        if (statusAnterior != oportunidade.getStatus()) {
+            registrarHistorico(oportunidade, statusAnterior, oportunidade.getStatus());
+        }
         aplicarEfeitoColateralDeVenda(oportunidade);
         return OportunidadeMapper.toResponse(oportunidade);
     }
@@ -91,6 +98,22 @@ public class OportunidadeService {
     public void excluir(Long id) {
         Oportunidade oportunidade = buscarEntidadePorId(id);
         repository.delete(oportunidade);
+    }
+
+    @Transactional(readOnly = true)
+    public List<OportunidadeHistoricoResponse> listarHistorico(Long oportunidadeId) {
+        buscarEntidadePorId(oportunidadeId);
+        return historicoRepository.findByOportunidadeIdOrderByAlteradoEmAsc(oportunidadeId).stream()
+                .map(h -> new OportunidadeHistoricoResponse(h.getId(), h.getStatusAnterior(), h.getStatusNovo(), h.getAlteradoEm()))
+                .toList();
+    }
+
+    private void registrarHistorico(Oportunidade oportunidade, StatusOportunidade statusAnterior, StatusOportunidade statusNovo) {
+        historicoRepository.save(OportunidadeHistorico.builder()
+                .oportunidade(oportunidade)
+                .statusAnterior(statusAnterior)
+                .statusNovo(statusNovo)
+                .build());
     }
 
     private void aplicarEfeitoColateralDeVenda(Oportunidade oportunidade) {

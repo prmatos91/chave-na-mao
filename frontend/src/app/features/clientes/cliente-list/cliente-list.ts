@@ -20,7 +20,6 @@ import {
   ConfirmDialogData,
 } from '../../../shared/components/confirm-dialog/confirm-dialog';
 import { INTERESSE_LABELS, enumValues } from '../../../shared/utils/labels';
-import { ClienteDetailDialog } from '../cliente-detail-dialog/cliente-detail-dialog';
 
 @Component({
   selector: 'app-cliente-list',
@@ -102,10 +101,6 @@ export class ClienteList implements OnInit {
     this.pageIndex.set(event.pageIndex);
     this.pageSize.set(event.pageSize);
     this.carregar();
-  }
-
-  protected visualizar(cliente: Cliente): void {
-    this.dialog.open(ClienteDetailDialog, { data: cliente, width: '480px' });
   }
 
   protected excluir(cliente: Cliente): void {

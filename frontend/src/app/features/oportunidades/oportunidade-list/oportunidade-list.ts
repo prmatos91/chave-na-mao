@@ -28,7 +28,6 @@ import {
   STATUS_OPORTUNIDADE_LABELS,
   enumValues,
 } from '../../../shared/utils/labels';
-import { OportunidadeDetailDialog } from '../oportunidade-detail-dialog/oportunidade-detail-dialog';
 
 @Component({
   selector: 'app-oportunidade-list',
@@ -135,9 +134,6 @@ export class OportunidadeList implements OnInit {
     this.carregar();
   }
 
-  protected visualizar(oportunidade: Oportunidade): void {
-    this.dialog.open(OportunidadeDetailDialog, { data: oportunidade, width: '520px' });
-  }
 
   protected excluir(oportunidade: Oportunidade): void {
     const data: ConfirmDialogData = {

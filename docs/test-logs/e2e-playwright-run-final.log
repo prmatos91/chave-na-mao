@@ -1,0 +1,12 @@
+
+Running 7 tests using 1 worker
+
+  ✓  1 [chromium] › e2e/cliente.spec.ts:4:7 › Clientes - fluxo completo › cria e exclui um cliente (1.1s)
+  ✓  2 [chromium] › e2e/cliente.spec.ts:28:7 › Clientes - fluxo completo › bloqueia cadastro com e-mail ja utilizado por outro cliente (389ms)
+  ✓  3 [chromium] › e2e/dashboard.spec.ts:4:7 › Dashboard › carrega e mostra os indicadores principais (177ms)
+  ✓  4 [chromium] › e2e/dashboard.spec.ts:15:7 › Dashboard › navega para as demais telas pelo menu lateral (435ms)
+  ✓  5 [chromium] › e2e/oportunidade.spec.ts:4:7 › Oportunidades - fluxo completo e regra de negócio › criar oportunidade como Vendido marca o veículo associado como Vendido automaticamente (4.3s)
+  ✓  6 [chromium] › e2e/veiculo.spec.ts:4:7 › Veículos - fluxo completo › cria, visualiza, edita e exclui um veículo (1.2s)
+  ✓  7 [chromium] › e2e/veiculo.spec.ts:46:7 › Veículos - fluxo completo › exibe erro de validação ao tentar salvar formulário vazio (259ms)
+
+  7 passed (8.3s)

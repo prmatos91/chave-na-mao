@@ -21,7 +21,6 @@ import {
   ConfirmDialogData,
 } from '../../../shared/components/confirm-dialog/confirm-dialog';
 import { STATUS_VEICULO_COLOR, STATUS_VEICULO_LABELS, enumValues } from '../../../shared/utils/labels';
-import { VeiculoDetailDialog } from '../veiculo-detail-dialog/veiculo-detail-dialog';
 
 @Component({
   selector: 'app-veiculo-list',
@@ -119,10 +118,6 @@ export class VeiculoList implements OnInit {
     this.pageIndex.set(event.pageIndex);
     this.pageSize.set(event.pageSize);
     this.carregar();
-  }
-
-  protected visualizar(veiculo: Veiculo): void {
-    this.dialog.open(VeiculoDetailDialog, { data: veiculo, width: '480px' });
   }
 
   protected excluir(veiculo: Veiculo): void {

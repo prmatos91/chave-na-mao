@@ -32,6 +32,8 @@ class OportunidadeServiceTest {
     @Mock
     private OportunidadeRepository repository;
     @Mock
+    private OportunidadeHistoricoRepository historicoRepository;
+    @Mock
     private ClienteRepository clienteRepository;
     @Mock
     private VeiculoRepository veiculoRepository;
@@ -97,5 +99,51 @@ class OportunidadeServiceTest {
         ArgumentCaptor<Veiculo> veiculoCaptor = ArgumentCaptor.forClass(Veiculo.class);
         verify(veiculoRepository).save(veiculoCaptor.capture());
         assertThat(veiculoCaptor.getValue().getStatus()).isEqualTo(StatusVeiculo.VENDIDO);
+    }
+
+    @Test
+    void criar_devePersistirEntradaDeHistoricoComStatusInicial() {
+        when(clienteRepository.findById(1L)).thenReturn(Optional.of(cliente()));
+        when(veiculoRepository.findById(2L)).thenReturn(Optional.of(veiculoDisponivel()));
+        when(repository.save(any(Oportunidade.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        OportunidadeRequest request = new OportunidadeRequest(1L, 2L, StatusOportunidade.NOVO_LEAD, null, null);
+        service.criar(request);
+
+        ArgumentCaptor<OportunidadeHistorico> historicoCaptor = ArgumentCaptor.forClass(OportunidadeHistorico.class);
+        verify(historicoRepository).save(historicoCaptor.capture());
+        assertThat(historicoCaptor.getValue().getStatusAnterior()).isNull();
+        assertThat(historicoCaptor.getValue().getStatusNovo()).isEqualTo(StatusOportunidade.NOVO_LEAD);
+    }
+
+    @Test
+    void atualizar_quandoStatusMuda_deveRegistrarHistorico() {
+        Oportunidade existente = Oportunidade.builder()
+                .id(5L).cliente(cliente()).veiculo(veiculoDisponivel())
+                .status(StatusOportunidade.NOVO_LEAD).build();
+        when(repository.findById(5L)).thenReturn(Optional.of(existente));
+        when(repository.save(any(Oportunidade.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        OportunidadeRequest request = new OportunidadeRequest(1L, 2L, StatusOportunidade.EM_NEGOCIACAO, null, null);
+        service.atualizar(5L, request);
+
+        ArgumentCaptor<OportunidadeHistorico> historicoCaptor = ArgumentCaptor.forClass(OportunidadeHistorico.class);
+        verify(historicoRepository).save(historicoCaptor.capture());
+        assertThat(historicoCaptor.getValue().getStatusAnterior()).isEqualTo(StatusOportunidade.NOVO_LEAD);
+        assertThat(historicoCaptor.getValue().getStatusNovo()).isEqualTo(StatusOportunidade.EM_NEGOCIACAO);
+    }
+
+    @Test
+    void atualizar_quandoStatusNaoMuda_naoDeveRegistrarHistorico() {
+        Oportunidade existente = Oportunidade.builder()
+                .id(5L).cliente(cliente()).veiculo(veiculoDisponivel())
+                .status(StatusOportunidade.NOVO_LEAD).build();
+        when(repository.findById(5L)).thenReturn(Optional.of(existente));
+        when(repository.save(any(Oportunidade.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        OportunidadeRequest request = new OportunidadeRequest(1L, 2L, StatusOportunidade.NOVO_LEAD, null, "Sem mudanca de status");
+        service.atualizar(5L, request);
+
+        verify(historicoRepository, never()).save(any());
     }
 }

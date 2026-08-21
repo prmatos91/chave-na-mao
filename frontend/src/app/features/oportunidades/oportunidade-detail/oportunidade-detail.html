@@ -1,0 +1,82 @@
+@if (carregando()) {
+  <div class="empty-state">
+    <mat-spinner diameter="32" />
+  </div>
+} @else if (oportunidade(); as o) {
+  <div class="page-header">
+    <div class="title-row">
+      <button mat-icon-button routerLink="/oportunidades" aria-label="Voltar">
+        <mat-icon>arrow_back</mat-icon>
+      </button>
+      <h1>Oportunidade #{{ o.id }}</h1>
+    </div>
+    <div class="actions">
+      <button mat-stroked-button [routerLink]="['/oportunidades', o.id, 'editar']">
+        <mat-icon>edit</mat-icon>
+        Editar
+      </button>
+      <button mat-stroked-button color="warn" (click)="excluir()">
+        <mat-icon>delete</mat-icon>
+        Excluir
+      </button>
+    </div>
+  </div>
+
+  <div class="detail-layout">
+    <mat-card class="detail-card">
+      <dl class="detail-grid">
+        <div>
+          <dt>Cliente</dt>
+          <dd>{{ o.cliente.nome }}</dd>
+        </div>
+        <div>
+          <dt>Veículo</dt>
+          <dd>{{ o.veiculo.marca }} {{ o.veiculo.modelo }} ({{ o.veiculo.ano }})</dd>
+        </div>
+        <div>
+          <dt>Status</dt>
+          <dd>
+            <span class="status-chip" [class]="statusColor[o.status]">{{ statusLabels[o.status] }}</span>
+          </dd>
+        </div>
+        <div>
+          <dt>Valor proposto</dt>
+          <dd>{{ o.valorProposto !== null ? (o.valorProposto | currency: 'BRL') : 'Não informado' }}</dd>
+        </div>
+        <div class="detail-full">
+          <dt>Observações</dt>
+          <dd>{{ o.observacoes || 'Sem observações' }}</dd>
+        </div>
+        <div>
+          <dt>Criada em</dt>
+          <dd>{{ o.createdAt | date: 'dd/MM/yyyy HH:mm' }}</dd>
+        </div>
+      </dl>
+    </mat-card>
+
+    <mat-card class="timeline-card">
+      <h2>Histórico de status</h2>
+      @if (historico().length === 0) {
+        <p class="timeline-empty">Nenhum histórico registrado ainda.</p>
+      } @else {
+        <ol class="timeline">
+          @for (item of historico(); track item.id) {
+            <li class="timeline-item">
+              <span class="timeline-dot" [class]="statusColor[item.statusNovo]"></span>
+              <div class="timeline-content">
+                <p class="timeline-title">
+                  @if (item.statusAnterior) {
+                    <strong>{{ statusLabels[item.statusAnterior] }}</strong> → <strong>{{ statusLabels[item.statusNovo] }}</strong>
+                  } @else {
+                    Oportunidade criada como <strong>{{ statusLabels[item.statusNovo] }}</strong>
+                  }
+                </p>
+                <p class="timeline-date">{{ item.alteradoEm | date: 'dd/MM/yyyy HH:mm' }}</p>
+              </div>
+            </li>
+          }
+        </ol>
+      }
+    </mat-card>
+  </div>
+}
