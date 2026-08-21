@@ -1,0 +1,36 @@
+<h2 mat-dialog-title>Oportunidade #{{ oportunidade.id }}</h2>
+<mat-dialog-content>
+  <dl class="detail-grid">
+    <div>
+      <dt>Cliente</dt>
+      <dd>{{ oportunidade.cliente.nome }}</dd>
+    </div>
+    <div>
+      <dt>Veículo</dt>
+      <dd>{{ oportunidade.veiculo.marca }} {{ oportunidade.veiculo.modelo }} ({{ oportunidade.veiculo.ano }})</dd>
+    </div>
+    <div>
+      <dt>Status</dt>
+      <dd>
+        <span class="status-chip" [class]="statusColor[oportunidade.status]">
+          {{ statusLabels[oportunidade.status] }}
+        </span>
+      </dd>
+    </div>
+    <div>
+      <dt>Valor proposto</dt>
+      <dd>{{ oportunidade.valorProposto !== null ? (oportunidade.valorProposto | currency: 'BRL') : 'Não informado' }}</dd>
+    </div>
+    <div class="detail-full">
+      <dt>Observações</dt>
+      <dd>{{ oportunidade.observacoes || 'Sem observações' }}</dd>
+    </div>
+    <div>
+      <dt>Criada em</dt>
+      <dd>{{ oportunidade.createdAt | date: 'dd/MM/yyyy HH:mm' }}</dd>
+    </div>
+  </dl>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button mat-dialog-close>Fechar</button>
+</mat-dialog-actions>

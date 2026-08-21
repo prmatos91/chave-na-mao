@@ -1,0 +1,13 @@
+❯ Building...
+✔ Building...
+Application bundle generation complete. [0.911 seconds] - 2026-08-21T20:59:53.640Z
+
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.11 [39m[90m/Users/llc/Documents/Teste técnico/frontend[39m
+
+
+[2m Test Files [22m [1m[32m4 passed[39m[22m[90m (4)[39m
+[2m      Tests [22m [1m[32m11 passed[39m[22m[90m (11)[39m
+[2m   Start at [22m 17:59:53
+[2m   Duration [22m 1.09s[2m (transform 191ms, setup 577ms, import 460ms, tests 335ms, environment 1.84s)[22m
+

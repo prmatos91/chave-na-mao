@@ -1,0 +1,86 @@
+<div class="page-header">
+  <h1>{{ editando() ? 'Editar veículo' : 'Novo veículo' }}</h1>
+</div>
+
+<mat-card class="form-card">
+  @if (carregando()) {
+    <div class="empty-state">
+      <mat-spinner diameter="32" />
+    </div>
+  } @else {
+    <form [formGroup]="form" (ngSubmit)="salvar()">
+      <div class="form-grid">
+        <mat-form-field appearance="outline">
+          <mat-label>Marca</mat-label>
+          <input matInput formControlName="marca" maxlength="100" />
+          @if (form.controls.marca.hasError('required') && form.controls.marca.touched) {
+            <mat-error>Marca é obrigatória</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Modelo</mat-label>
+          <input matInput formControlName="modelo" maxlength="100" />
+          @if (form.controls.modelo.hasError('required') && form.controls.modelo.touched) {
+            <mat-error>Modelo é obrigatório</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Ano</mat-label>
+          <input matInput type="number" formControlName="ano" />
+          @if (form.controls.ano.hasError('required') && form.controls.ano.touched) {
+            <mat-error>Ano é obrigatório</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Preço (R$)</mat-label>
+          <input matInput type="number" step="0.01" formControlName="preco" />
+          @if (form.controls.preco.hasError('required') && form.controls.preco.touched) {
+            <mat-error>Preço é obrigatório</mat-error>
+          }
+          @if (form.controls.preco.hasError('min') && form.controls.preco.touched) {
+            <mat-error>Preço deve ser maior que zero</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Cor</mat-label>
+          <input matInput formControlName="cor" maxlength="50" />
+          @if (form.controls.cor.hasError('required') && form.controls.cor.touched) {
+            <mat-error>Cor é obrigatória</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Quilometragem</mat-label>
+          <input matInput type="number" formControlName="quilometragem" />
+          @if (form.controls.quilometragem.hasError('required') && form.controls.quilometragem.touched) {
+            <mat-error>Quilometragem é obrigatória</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Status</mat-label>
+          <mat-select formControlName="status">
+            @for (status of statusOptions; track status) {
+              <mat-option [value]="status">{{ statusLabels[status] }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <div class="form-actions">
+        <button mat-button type="button" (click)="cancelar()">Cancelar</button>
+        <button mat-flat-button color="primary" type="submit" [disabled]="salvando()">
+          @if (salvando()) {
+            <mat-spinner diameter="18" />
+          } @else {
+            Salvar
+          }
+        </button>
+      </div>
+    </form>
+  }
+</mat-card>

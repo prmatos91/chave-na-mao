@@ -1,0 +1,85 @@
+<div class="page-header">
+  <h1>Clientes</h1>
+  <button mat-flat-button color="primary" routerLink="/clientes/novo">
+    <mat-icon>add</mat-icon>
+    Novo cliente
+  </button>
+</div>
+
+<div class="filter-bar">
+  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+    <mat-label>Buscar por nome ou e-mail</mat-label>
+    <input matInput [formControl]="searchControl" placeholder="Ex: Ana, ana@..." />
+    <mat-icon matSuffix>search</mat-icon>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+    <mat-label>Interesse principal</mat-label>
+    <mat-select [formControl]="interesseControl">
+      <mat-option value="">Todos</mat-option>
+      @for (interesse of interesseOptions; track interesse) {
+        <mat-option [value]="interesse">{{ interesseLabels[interesse] }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+</div>
+
+<div class="table-wrapper">
+  <table mat-table [dataSource]="data()" class="full-width">
+    <ng-container matColumnDef="nome">
+      <th mat-header-cell *matHeaderCellDef>Nome</th>
+      <td mat-cell *matCellDef="let c">{{ c.nome }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="email">
+      <th mat-header-cell *matHeaderCellDef>E-mail</th>
+      <td mat-cell *matCellDef="let c">{{ c.email }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="telefone">
+      <th mat-header-cell *matHeaderCellDef>Telefone</th>
+      <td mat-cell *matCellDef="let c">{{ c.telefone }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="interesse">
+      <th mat-header-cell *matHeaderCellDef>Interesse</th>
+      <td mat-cell *matCellDef="let c">{{ interesseLabel(c.interessePrincipal) }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="acoes">
+      <th mat-header-cell *matHeaderCellDef class="col-acoes">Ações</th>
+      <td mat-cell *matCellDef="let c" class="col-acoes">
+        <button mat-icon-button matTooltip="Visualizar" (click)="visualizar(c)">
+          <mat-icon>visibility</mat-icon>
+        </button>
+        <button mat-icon-button matTooltip="Editar" [routerLink]="['/clientes', c.id, 'editar']">
+          <mat-icon>edit</mat-icon>
+        </button>
+        <button mat-icon-button matTooltip="Excluir" (click)="excluir(c)">
+          <mat-icon>delete</mat-icon>
+        </button>
+      </td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+    <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+  </table>
+
+  @if (loading()) {
+    <div class="empty-state">
+      <mat-spinner diameter="32" />
+    </div>
+  } @else if (data().length === 0) {
+    <div class="empty-state">
+      <p>Nenhum cliente encontrado com os filtros atuais.</p>
+    </div>
+  }
+
+  <mat-paginator
+    [length]="totalElements()"
+    [pageIndex]="pageIndex()"
+    [pageSize]="pageSize()"
+    [pageSizeOptions]="[5, 10, 25, 50]"
+    (page)="onPage($event)"
+  />
+</div>

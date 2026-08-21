@@ -1,0 +1,88 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend:
+    name: Backend (Java / Spring Boot)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configurar JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+          cache-dependency-path: backend/pom.xml
+
+      - name: Rodar testes (mvnw test)
+        working-directory: backend
+        run: ./mvnw -B test
+
+      - name: Build do jar (sem testes, ja rodados acima)
+        working-directory: backend
+        run: ./mvnw -B clean package -DskipTests
+
+  frontend:
+    name: Frontend (Angular)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configurar Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Instalar dependencias
+        working-directory: frontend
+        run: npm ci
+
+      - name: Rodar testes (ng test)
+        working-directory: frontend
+        run: npm test
+
+      - name: Build de producao (ng build)
+        working-directory: frontend
+        run: npm run build
+
+  docker-compose:
+    name: Stack completa via Docker Compose
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Preparar .env
+        run: cp .env.example .env
+
+      - name: Subir a stack e aguardar os servicos ficarem saudaveis
+        run: |
+          docker compose up --build -d
+          timeout 180 sh -c '
+            until [ "$(docker inspect -f "{{.State.Health.Status}}" crm-carros-backend-1 2>/dev/null)" = "healthy" ] && \
+                  [ "$(docker inspect -f "{{.State.Health.Status}}" crm-carros-frontend-1 2>/dev/null)" = "healthy" ]; do
+              sleep 5
+            done
+          '
+
+      - name: Verificar API e frontend respondendo
+        run: |
+          curl -sf http://localhost:8080/api/dashboard
+          curl -sf -o /dev/null http://localhost:4200/
+
+      - name: Logs em caso de falha
+        if: failure()
+        run: docker compose logs
+
+      - name: Encerrar a stack
+        if: always()
+        run: docker compose down -v

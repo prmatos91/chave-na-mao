@@ -1,0 +1,62 @@
+<div class="page-header">
+  <h1>{{ editando() ? 'Editar cliente' : 'Novo cliente' }}</h1>
+</div>
+
+<mat-card class="form-card">
+  @if (carregando()) {
+    <div class="empty-state">
+      <mat-spinner diameter="32" />
+    </div>
+  } @else {
+    <form [formGroup]="form" (ngSubmit)="salvar()">
+      <div class="form-grid">
+        <mat-form-field appearance="outline">
+          <mat-label>Nome</mat-label>
+          <input matInput formControlName="nome" maxlength="150" />
+          @if (form.controls.nome.hasError('required') && form.controls.nome.touched) {
+            <mat-error>Nome é obrigatório</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>E-mail</mat-label>
+          <input matInput type="email" formControlName="email" maxlength="150" />
+          @if (form.controls.email.hasError('required') && form.controls.email.touched) {
+            <mat-error>E-mail é obrigatório</mat-error>
+          }
+          @if (form.controls.email.hasError('email') && form.controls.email.touched) {
+            <mat-error>E-mail inválido</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Telefone</mat-label>
+          <input matInput formControlName="telefone" maxlength="20" placeholder="11987654321" />
+          @if (form.controls.telefone.hasError('required') && form.controls.telefone.touched) {
+            <mat-error>Telefone é obrigatório</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Interesse principal</mat-label>
+          <mat-select formControlName="interessePrincipal">
+            @for (interesse of interesseOptions; track interesse) {
+              <mat-option [value]="interesse">{{ interesseLabels[interesse] }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <div class="form-actions">
+        <button mat-button type="button" (click)="cancelar()">Cancelar</button>
+        <button mat-flat-button color="primary" type="submit" [disabled]="salvando()">
+          @if (salvando()) {
+            <mat-spinner diameter="18" />
+          } @else {
+            Salvar
+          }
+        </button>
+      </div>
+    </form>
+  }
+</mat-card>

@@ -1,0 +1,41 @@
+<mat-sidenav-container class="app-shell">
+  <mat-sidenav
+    #sidenav
+    [mode]="isMobile() ? 'over' : 'side'"
+    [opened]="!isMobile()"
+    class="app-sidenav"
+  >
+    <div class="app-brand">
+      <mat-icon>directions_car</mat-icon>
+      <span>CRM Carros</span>
+    </div>
+    <mat-nav-list>
+      @for (link of navLinks; track link.path) {
+        <a
+          mat-list-item
+          [routerLink]="link.path"
+          routerLinkActive="active-link"
+          (click)="isMobile() && sidenav.close()"
+        >
+          <mat-icon matListItemIcon>{{ link.icon }}</mat-icon>
+          <span matListItemTitle>{{ link.label }}</span>
+        </a>
+      }
+    </mat-nav-list>
+  </mat-sidenav>
+
+  <mat-sidenav-content>
+    <mat-toolbar color="primary" class="app-toolbar">
+      @if (isMobile()) {
+        <button mat-icon-button (click)="sidenav.toggle()" aria-label="Abrir menu">
+          <mat-icon>menu</mat-icon>
+        </button>
+      }
+      <span>CRM de Venda de Carros</span>
+    </mat-toolbar>
+
+    <main class="app-content">
+      <router-outlet />
+    </main>
+  </mat-sidenav-content>
+</mat-sidenav-container>

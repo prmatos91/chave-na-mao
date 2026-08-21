@@ -1,0 +1,24 @@
+<h2 mat-dialog-title>{{ cliente.nome }}</h2>
+<mat-dialog-content>
+  <dl class="detail-grid">
+    <div>
+      <dt>E-mail</dt>
+      <dd>{{ cliente.email }}</dd>
+    </div>
+    <div>
+      <dt>Telefone</dt>
+      <dd>{{ cliente.telefone }}</dd>
+    </div>
+    <div>
+      <dt>Interesse principal</dt>
+      <dd>{{ interesseLabels[cliente.interessePrincipal] }}</dd>
+    </div>
+    <div>
+      <dt>Cadastrado em</dt>
+      <dd>{{ cliente.createdAt | date: 'dd/MM/yyyy HH:mm' }}</dd>
+    </div>
+  </dl>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button mat-dialog-close>Fechar</button>
+</mat-dialog-actions>

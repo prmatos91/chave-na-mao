@@ -1,0 +1,23 @@
+# Ambiente local
+.env
+.DS_Store
+
+# Backend (Maven / Java)
+backend/target/
+*.class
+
+# Frontend (Angular / Node)
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+npm-debug.log*
+
+# IDEs
+.idea/
+.vscode/
+*.iml
+
+# Logs
+*.log
+# excecao: logs reais de execucao de teste, citados na documentacao de QA
+!docs/test-logs/*.log

@@ -1,0 +1,103 @@
+<div class="page-header">
+  <h1>Oportunidades</h1>
+  <button mat-flat-button color="primary" routerLink="/oportunidades/novo">
+    <mat-icon>add</mat-icon>
+    Nova oportunidade
+  </button>
+</div>
+
+<div class="filter-bar">
+  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+    <mat-label>Status</mat-label>
+    <mat-select [formControl]="statusControl">
+      <mat-option value="">Todos</mat-option>
+      @for (status of statusOptions; track status) {
+        <mat-option [value]="status">{{ statusLabels[status] }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+    <mat-label>Cliente</mat-label>
+    <mat-select [formControl]="clienteControl">
+      <mat-option value="">Todos</mat-option>
+      @for (cliente of clientes(); track cliente.id) {
+        <mat-option [value]="cliente.id">{{ cliente.nome }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+    <mat-label>Veículo</mat-label>
+    <mat-select [formControl]="veiculoControl">
+      <mat-option value="">Todos</mat-option>
+      @for (veiculo of veiculos(); track veiculo.id) {
+        <mat-option [value]="veiculo.id">{{ veiculo.marca }} {{ veiculo.modelo }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+</div>
+
+<div class="table-wrapper">
+  <table mat-table [dataSource]="data()" class="full-width">
+    <ng-container matColumnDef="cliente">
+      <th mat-header-cell *matHeaderCellDef>Cliente</th>
+      <td mat-cell *matCellDef="let o">{{ o.cliente.nome }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="veiculo">
+      <th mat-header-cell *matHeaderCellDef>Veículo</th>
+      <td mat-cell *matCellDef="let o">{{ o.veiculo.marca }} {{ o.veiculo.modelo }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="status">
+      <th mat-header-cell *matHeaderCellDef>Status</th>
+      <td mat-cell *matCellDef="let o">
+        <span class="status-chip" [class]="statusClass(o.status)">{{ statusLabel(o.status) }}</span>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="valorProposto">
+      <th mat-header-cell *matHeaderCellDef>Valor proposto</th>
+      <td mat-cell *matCellDef="let o">
+        {{ o.valorProposto !== null ? (o.valorProposto | currency: 'BRL') : '—' }}
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="acoes">
+      <th mat-header-cell *matHeaderCellDef class="col-acoes">Ações</th>
+      <td mat-cell *matCellDef="let o" class="col-acoes">
+        <button mat-icon-button matTooltip="Visualizar" (click)="visualizar(o)">
+          <mat-icon>visibility</mat-icon>
+        </button>
+        <button mat-icon-button matTooltip="Editar" [routerLink]="['/oportunidades', o.id, 'editar']">
+          <mat-icon>edit</mat-icon>
+        </button>
+        <button mat-icon-button matTooltip="Excluir" (click)="excluir(o)">
+          <mat-icon>delete</mat-icon>
+        </button>
+      </td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+    <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+  </table>
+
+  @if (loading()) {
+    <div class="empty-state">
+      <mat-spinner diameter="32" />
+    </div>
+  } @else if (data().length === 0) {
+    <div class="empty-state">
+      <p>Nenhuma oportunidade encontrada com os filtros atuais.</p>
+    </div>
+  }
+
+  <mat-paginator
+    [length]="totalElements()"
+    [pageIndex]="pageIndex()"
+    [pageSize]="pageSize()"
+    [pageSizeOptions]="[5, 10, 25, 50]"
+    (page)="onPage($event)"
+  />
+</div>
