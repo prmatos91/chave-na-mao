@@ -248,6 +248,24 @@ curl -s --unix-socket /var/run/docker.sock http://localhost/info         # HTTP 
 [INFO] BUILD SUCCESS (15 outros testes passando normalmente)
 ```
 
+### 5.2.1 Confirmação real no CI — e um segundo bug real encontrado
+
+Depois do primeiro push, o pipeline de CI rodou pela primeira vez de verdade no GitHub Actions (runner Ubuntu padrão, Docker Engine puro — exatamente o cenário que a seção anterior previu que funcionaria). O resultado confirmou a hipótese e revelou um **segundo bug real**, que só aparece quando o Docker está de fato disponível para o Testcontainers:
+
+```
+23:28:39.902 [main] INFO ... DockerClientProviderStrategy -- Found Docker environment with local Unix socket
+...
+[ERROR] Tests run: 2, Failures: 0, Errors: 2, Skipped: 0 -- in CrmCarrosPostgresIntegrationTest
+Caused by: org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'flywayInitializer' ...:
+  Driver org.h2.Driver claims to not accept jdbcUrl, jdbc:postgresql://localhost:32769/crm_carros_test?loggerLevel=OFF
+```
+
+**Causa raiz**: o `@DynamicPropertySource` sobrescrevia `spring.datasource.url/username/password` com os valores do container Testcontainers, mas **não** `spring.datasource.driver-class-name`. Mesmo com a URL do Postgres correta chegando ao Spring, o driver ficou "preso" no H2 (inferido a partir do `src/test/resources/application.yml`, usado pela suíte H2). Como esse bug só se manifesta depois que o Testcontainers consegue de fato subir o container, ele nunca apareceu localmente — a máquina de desenvolvimento usada nunca passou dessa etapa por causa do bug de detecção do Docker Desktop descrito acima. Foi só com uma execução real em um ambiente onde a primeira barreira não existia que esse segundo problema pôde ser encontrado.
+
+**Correção**: adicionado `registry.add("spring.datasource.driver-class-name", () -> "org.postgresql.Driver")` explicitamente no `@DynamicPropertySource`, eliminando a dependência de inferência automática. Corrigido e re-enviado para validação no CI (ver resultado final na seção 5.6).
+
+Esse é um exemplo concreto de por que ter CI real importa: o bug só existia no caminho de execução que a máquina de desenvolvimento local nunca conseguiu alcançar.
+
 ### 5.3 Histórico de status da oportunidade
 
 Nova migration (`V3__oportunidade_historico.sql`), entidade, repositório e endpoint `GET /api/oportunidades/{id}/historico`. Testado ao vivo:

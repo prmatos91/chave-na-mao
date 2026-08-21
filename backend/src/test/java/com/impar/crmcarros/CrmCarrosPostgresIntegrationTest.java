@@ -62,6 +62,11 @@ class CrmCarrosPostgresIntegrationTest {
         registry.add("spring.datasource.url", postgres::getJdbcUrl);
         registry.add("spring.datasource.username", postgres::getUsername);
         registry.add("spring.datasource.password", postgres::getPassword);
+        // Sem isto, o Spring as vezes infere o driver a partir do H2 usado em
+        // src/test/resources/application.yml (mesmo com a url do Postgres correta
+        // vindo daqui) - problema real encontrado rodando este teste pela primeira
+        // vez com Docker de verdade disponivel (ver docs/TEST_EXECUTION_LOG.md).
+        registry.add("spring.datasource.driver-class-name", () -> "org.postgresql.Driver");
     }
 
     @Autowired
