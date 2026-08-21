@@ -310,6 +310,20 @@ Running 7 tests using 1 worker
 
 Confirmado via API (`GET /api/dashboard`) que os dados criados pelos testes foram completamente removidos ao final, sem deixar resíduo no ambiente.
 
+### 5.6 Primeira execução real do pipeline de CI (GitHub Actions)
+
+Depois do push do repositório, o workflow `.github/workflows/ci.yml` disparou automaticamente. A **primeira execução real** (run [`32536963465`](https://github.com/prmatos91/crm-carros-impar/actions/runs/32536963465)) pegou exatamente o bug descrito na seção 5.2.1 (`Backend` falhou, os outros dois jobs nem chegaram a rodar por causa do `needs:`). Depois da correção do `driver-class-name` (commit `6a40ff7`) e um novo push, a **segunda execução** (run [`32537163388`](https://github.com/prmatos91/crm-carros-impar/actions/runs/32537163388)) passou por completo:
+
+```
+✓ Frontend (Angular) in 28s
+✓ Backend (Java / Spring Boot) in 1m5s
+    [INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 12.94 s -- in CrmCarrosPostgresIntegrationTest
+    [INFO] BUILD SUCCESS
+✓ Stack completa via Docker Compose + E2E (Playwright) in 2m36s
+```
+
+Confirmando, num ambiente completamente independente da máquina de desenvolvimento (runner Ubuntu do GitHub, Docker Engine padrão): os 20 testes do backend passam de verdade — **incluindo o teste contra PostgreSQL real via Testcontainers**, que nesse ambiente não precisou pular (ao contrário da máquina de desenvolvimento local, onde ele pula por causa da incompatibilidade documentada na seção 5.2); os testes do frontend passam; a imagem Docker builda; a stack completa sobe saudável; e os 7 testes E2E do Playwright passam contra a aplicação real rodando em containers. Esse foi o fechamento do ciclo completo de validação descrito neste documento — do primeiro `mvnw test` local até o pipeline de CI verde na infraestrutura real do GitHub.
+
 ## 6. Resumo geral
 
 | Suíte | Execuções até passar | Falhas reais encontradas |
@@ -320,7 +334,8 @@ Confirmado via API (`GET /api/dashboard`) que os dados criados pelos testes fora
 | `docker compose up --build` (Fase 1) | 2 | healthcheck do frontend usando `localhost` (resolvia para IPv6, Nginx só escutava IPv4) |
 | Verificação manual browser (Fase 1) | 1 rodada, 1 bug encontrado | locale de formatação de moeda/número |
 | Auditoria manual da API (Fase 2) | 1 rodada, 4 bugs encontrados | 500 em id invalido; sem log de erro; sem headers de seguranca; race condition no e-mail |
-| Testcontainers (Fase 2) | Bloqueado neste ambiente, contornado | incompatibilidade Docker Desktop 29.x x Testcontainers 1.21.3 |
+| Testcontainers (Fase 2) | Pula localmente (ambiente), passa no CI | incompatibilidade Docker Desktop 29.x × Testcontainers 1.21.3 (local); driver do datasource nao sobrescrito (só apareceu no CI) |
 | Playwright E2E (Fase 2) | 3 | build desatualizado no container; seletor `.last()` ambiguo; paginacao escondendo registro criado |
+| Pipeline de CI real (GitHub Actions) | 2 | job do backend falhando por causa do bug do driver do Testcontainers (só visível ali) |
 
-Todas as falhas listadas foram reais (não simuladas), encontradas ao executar os comandos durante o desenvolvimento assistido por IA, e corrigidas (ou contornadas de forma documentada, no caso do Testcontainers) antes da entrega.
+Todas as falhas listadas foram reais (não simuladas), encontradas ao executar os comandos durante o desenvolvimento assistido por IA, e corrigidas antes da entrega — inclusive uma que só foi possível encontrar rodando o pipeline de CI de verdade, depois do push.
