@@ -16,20 +16,18 @@ Não há autenticação/login no escopo atual — é um sistema de uso interno d
 
 ```mermaid
 flowchart LR
-    subgraph Navegador
-        UI[Angular SPA<br/>Angular Material]
+    UI[Angular SPA - Angular Material]
+
+    subgraph compose[Docker Compose]
+        FE[frontend Nginx - porta 4200]
+        BE[backend Spring Boot - porta 8080]
+        DB[(PostgreSQL 16)]
     end
 
-    subgraph "Docker Compose"
-        FE["frontend (Nginx)<br/>porta 4200 -> 80"]
-        BE["backend (Spring Boot)<br/>porta 8080"]
-        DB[("PostgreSQL 16<br/>volume nomeado")]
-    end
-
-    UI -- "HTTP/JSON (env.js define a API_URL)" --> FE
-    UI -- "REST /api/**" --> BE
-    BE -- "JDBC" --> DB
-    BE -. "Flyway migrations + seed<br/>na subida" .-> DB
+    UI -->|HTTP JSON via env.js| FE
+    UI -->|REST slash api| BE
+    BE -->|JDBC| DB
+    BE -.->|Flyway migrations e seed| DB
 ```
 
 O navegador do usuário fala diretamente com o backend (porta 8080 exposta no host) — o Nginx do frontend só serve os arquivos estáticos do Angular, não faz proxy de API. Ver a decisão de configuração de `API_URL` na seção 3.
