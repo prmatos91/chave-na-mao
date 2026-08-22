@@ -33,6 +33,27 @@
   flex: 1 1 auto;
 }
 
+.toolbar-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.toolbar-title-short {
+  display: none;
+}
+
+@media (max-width: 599px) {
+  .toolbar-title-full {
+    display: none;
+  }
+
+  .toolbar-title-short {
+    display: inline;
+  }
+}
+
 .app-content {
   padding: 1.5rem;
   max-width: 1400px;

@@ -68,8 +68,8 @@ jobs:
         run: |
           docker compose up --build -d
           timeout 180 sh -c '
-            until [ "$(docker inspect -f "{{.State.Health.Status}}" crm-carros-backend-1 2>/dev/null)" = "healthy" ] && \
-                  [ "$(docker inspect -f "{{.State.Health.Status}}" crm-carros-frontend-1 2>/dev/null)" = "healthy" ]; do
+            until [ "$(docker inspect -f "{{.State.Health.Status}}" chave-na-mao-backend-1 2>/dev/null)" = "healthy" ] && \
+                  [ "$(docker inspect -f "{{.State.Health.Status}}" chave-na-mao-frontend-1 2>/dev/null)" = "healthy" ]; do
               sleep 5
             done
           '

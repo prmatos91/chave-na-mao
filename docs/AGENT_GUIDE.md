@@ -4,7 +4,7 @@
 
 ## 1. O que este sistema é
 
-Um CRM (Customer Relationship Management) para uma revenda de veículos. Existem três entidades de negócio centrais e um dashboard agregador:
+**Chave na Mão** é um CRM (Customer Relationship Management) para uma revenda de veículos. Existem três entidades de negócio centrais e um dashboard agregador:
 
 - **Veículo**: um carro no estoque da revenda.
 - **Cliente**: uma pessoa interessada em comprar um carro.

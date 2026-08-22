@@ -1,8 +1,8 @@
-# CRM de Venda de Carros
+# Chave na Mão
 
-[![CI](https://github.com/prmatos91/crm-carros-impar/actions/workflows/ci.yml/badge.svg)](https://github.com/prmatos91/crm-carros-impar/actions/workflows/ci.yml)
+[![CI](https://github.com/prmatos91/chave-na-mao/actions/workflows/ci.yml/badge.svg)](https://github.com/prmatos91/chave-na-mao/actions/workflows/ci.yml)
 
-CRM web para gestão de vendas de veículos: cadastro de veículos, clientes e oportunidades de venda, com dashboard de indicadores. Desenvolvido como teste técnico para o processo seletivo da Ímpar.
+**Chave na Mão** é um CRM web para gestão de vendas de veículos: cadastro de veículos, clientes e oportunidades de venda, com dashboard de indicadores. Desenvolvido como teste técnico para o processo seletivo da Ímpar.
 
 **Stack:** Angular 22 (standalone components + Angular Material) · Java 21 / Spring Boot 4 · PostgreSQL 16 · tudo orquestrado via Docker Compose.
 
@@ -25,7 +25,7 @@ Apenas **Docker** e **Docker Compose** precisam estar instalados na máquina do 
 
 ```bash
 git clone <url-do-repositorio>
-cd crm-carros-impar
+cd chave-na-mao
 cp .env.example .env
 docker compose up --build
 ```
@@ -49,7 +49,7 @@ Assim que o backend ficar saudável, ele aplica automaticamente as **migrations 
 docker compose down
 ```
 
-Os dados do PostgreSQL ficam persistidos em um volume Docker nomeado (`crm-carros_postgres_data`) e sobrevivem a `docker compose down`. Para resetar o banco do zero (reaplicar migrations e seed):
+Os dados do PostgreSQL ficam persistidos em um volume Docker nomeado (`chave-na-mao_postgres_data`) e sobrevivem a `docker compose down`. Para resetar o banco do zero (reaplicar migrations e seed):
 
 ```bash
 docker compose down -v
