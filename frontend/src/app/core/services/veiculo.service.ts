@@ -45,4 +45,16 @@ export class VeiculoService {
   excluir(id: number): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/${id}`);
   }
+
+  listarMarcas(): Observable<string[]> {
+    return this.http.get<string[]>(`${this.baseUrl}/marcas`);
+  }
+
+  listarModelosPorMarca(marca: string): Observable<string[]> {
+    return this.http.get<string[]>(`${this.baseUrl}/modelos`, { params: { marca } });
+  }
+
+  listarCores(): Observable<string[]> {
+    return this.http.get<string[]>(`${this.baseUrl}/cores`);
+  }
 }

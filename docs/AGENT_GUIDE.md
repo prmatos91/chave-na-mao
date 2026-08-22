@@ -16,18 +16,18 @@ Não há autenticação/login no escopo atual — é um sistema de uso interno d
 
 ```mermaid
 flowchart LR
-    UI[Angular SPA - Angular Material]
+    UI["Angular SPA<br/>Angular Material"]
 
-    subgraph compose[Docker Compose]
-        FE[frontend Nginx - porta 4200]
-        BE[backend Spring Boot - porta 8080]
+    subgraph compose["Docker Compose"]
+        FE["frontend Nginx<br/>porta 4200"]
+        BE["backend Spring Boot<br/>porta 8080"]
         DB[(PostgreSQL 16)]
     end
 
-    UI -->|HTTP JSON via env.js| FE
-    UI -->|REST slash api| BE
+    UI -->|"HTTP/JSON via env.js"| FE
+    UI -->|"REST /api/**"| BE
     BE -->|JDBC| DB
-    BE -.->|Flyway migrations e seed| DB
+    BE -.->|"Flyway migrations + seed"| DB
 ```
 
 O navegador do usuário fala diretamente com o backend (porta 8080 exposta no host) — o Nginx do frontend só serve os arquivos estáticos do Angular, não faz proxy de API. Ver a decisão de configuração de `API_URL` na seção 3.
@@ -88,6 +88,8 @@ erDiagram
 **Regra de negócio importante**: o status de um veículo pode ser alterado automaticamente pelo sistema (ver Oportunidade abaixo), não apenas manualmente pelo usuário.
 
 Um veículo **não pode ser excluído** se tiver alguma Oportunidade associada (o banco impõe isso via `ON DELETE RESTRICT` na FK; o backend traduz a violação em um erro 409 amigável — ver `VeiculoService.excluir`).
+
+Além do CRUD, existem 3 endpoints de apoio à UX do formulário (`GET /api/veiculos/marcas`, `GET /api/veiculos/modelos?marca=X`, `GET /api/veiculos/cores`) que retornam os valores distintos já cadastrados, usados para alimentar autocomplete no frontend (marca → filtra modelo em cascata). Eles não impõem uma lista fechada — o campo continua aceitando texto livre, é só uma sugestão a partir do que já existe no banco.
 
 ### Cliente (`backend/.../cliente`)
 
@@ -173,7 +175,9 @@ Padrão de feature: `standalone components`, roteamento lazy-loaded (`app.routes
 
 **Configuração de API em runtime**: o frontend é buildado uma única vez e a URL da API é injetada em runtime via `frontend/public/env.js` (dev) ou gerado dinamicamente pelo entrypoint do container Nginx a partir da variável `API_URL` (produção/Docker) — ver `frontend/docker/docker-entrypoint.sh`. Nunca hardcode a URL da API em um service; sempre use `RuntimeConfigService`.
 
-**Locale**: a aplicação inteira usa `LOCALE_ID = 'pt-BR'` (registrado em `app.config.ts`), então os pipes `currency`/`number`/`date` já formatam em português/BRL por padrão sem precisar passar locale manualmente em cada uso.
+**Locale**: a aplicação inteira usa `LOCALE_ID = 'pt-BR'` (registrado em `app.config.ts`), então os pipes `currency`/`number`/`date` já formatam em português/BRL por padrão sem precisar passar locale manualmente em cada uso. O `MatPaginatorIntl` também é sobrescrito globalmente (`core/services/paginator-intl-pt-br.ts`) para traduzir os textos do paginador ("Itens por página", etc.) — qualquer tela nova com `MatPaginator` já herda a tradução automaticamente, não precisa configurar nada por componente.
+
+**Tema claro/escuro**: `core/services/theme.service.ts` alterna uma classe `dark-theme` no `<html>`, e `styles.scss` define dois blocos `@include mat.theme(...)` (um com `theme-type: light`, outro com `theme-type: dark`) usando a mesma paleta — é assim que o Angular Material 3 troca de tema sem duplicar CSS customizado, já que todos os componentes (e os estilos globais que usam `--mat-sys-*`) reagem à troca de classe automaticamente. A preferência do usuário é persistida em `localStorage` (com fallback para `prefers-color-scheme` do sistema na primeira visita) — o acesso a `localStorage`/`window`/`document` é sempre defensivo (`typeof x !== 'undefined'`) porque o ambiente de teste (Vitest) não fornece esses globals da mesma forma que um navegador real; isso já causou uma falha de teste real, ver `docs/TEST_EXECUTION_LOG.md`.
 
 **Testes E2E**: `frontend/e2e/*.spec.ts` (Playwright), rodam contra a stack real via Docker Compose (não contra `ng serve`/mocks) — cobrem os fluxos de CRUD completo e a regra de negócio de venda. Ao adicionar uma tela ou fluxo novo relevante, adicione um teste E2E cobrindo o caminho feliz; ver `docs/QA_GUIDE.md` para o comando de execução.
 

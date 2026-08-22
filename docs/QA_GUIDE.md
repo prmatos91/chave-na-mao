@@ -89,14 +89,14 @@ Depois de `docker compose up --build`, com o frontend em http://localhost:4200:
 
 1. **Dashboard** (`/dashboard`): confere totais e resumo por status.
 2. **Veículos** (`/veiculos`): lista, filtro por status, busca por texto, paginação.
-3. **Cadastro/edição de veículo** (`/veiculos/novo`, `/veiculos/:id/editar`): validação de campo obrigatório (tentar salvar vazio) e salvamento com sucesso.
+3. **Cadastro/edição de veículo** (`/veiculos/novo`, `/veiculos/:id/editar`): validação de campo obrigatório (tentar salvar vazio) e salvamento com sucesso; os campos marca/modelo/cor sugerem valores já cadastrados via autocomplete (modelo filtra pela marca escolhida) mas aceitam texto livre.
 4. **Clientes** (`/clientes`): lista, filtro por interesse, busca por texto.
 5. **Cadastro/edição de cliente** (`/clientes/novo`, `/clientes/:id/editar`): validação de e-mail inválido e e-mail duplicado.
 6. **Oportunidades** (`/oportunidades`): lista, filtro por status/cliente/veículo.
 7. **Cadastro/edição de oportunidade** (`/oportunidades/novo`, `/oportunidades/:id/editar`): seleção de cliente e veículo, mudança de status.
 8. **Detalhes** (ícone de "olho" em qualquer listagem, navega para `/veiculos/:id`, `/clientes/:id` ou `/oportunidades/:id`): página própria com os dados completos do registro; no caso da oportunidade, inclui a timeline de histórico de status.
 
-Em cada tela, confirmar também: exclusão pede confirmação (`ConfirmDialog`) antes de efetivar, e o resultado da operação aparece como um snackbar (verde para sucesso, vermelho para erro).
+Em cada tela, confirmar também: exclusão pede confirmação (`ConfirmDialog`) antes de efetivar, o resultado da operação aparece como um snackbar (verde para sucesso, vermelho para erro), a paginação está em português ("Itens por página", "X – Y de Z"), a coluna de Ações (visualizar/editar/excluir) nunca quebra em duas linhas, e o botão de alternar tema (ícone no topo direito) troca a interface inteira entre claro e escuro sem recarregar a página.
 
 ## 6. Definição de pronto (Definition of Done)
 

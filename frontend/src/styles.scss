@@ -10,6 +10,25 @@ html {
   @include mat.theme(
     (
       color: (
+        theme-type: light,
+        primary: mat.$azure-palette,
+        tertiary: mat.$blue-palette,
+      ),
+      typography: Roboto,
+      density: 0,
+    )
+  );
+}
+
+// Tema escuro, ativado trocando a classe no <html> via ThemeService
+// (core/services/theme.service.ts). Mesma paleta, so muda o theme-type.
+html.dark-theme {
+  color-scheme: dark;
+
+  @include mat.theme(
+    (
+      color: (
+        theme-type: dark,
         primary: mat.$azure-palette,
         tertiary: mat.$blue-palette,
       ),
@@ -20,9 +39,6 @@ html {
 }
 
 body {
-  // Default the application to a light color theme. This can be changed to
-  // `dark` to enable the dark color theme, or to `light dark` to defer to the
-  // user's system settings.
   color-scheme: light;
 
   // Set a default background, font and text colors for the application using
@@ -35,6 +51,11 @@ body {
   // Reset the user agent margin.
   margin: 0;
   height: 100%;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+html.dark-theme body {
+  color-scheme: dark;
 }
 /* You can add global styles to this file, and also import other style files */
 

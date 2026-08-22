@@ -12,7 +12,18 @@
       <div class="form-grid">
         <mat-form-field appearance="outline">
           <mat-label>Marca</mat-label>
-          <input matInput formControlName="marca" maxlength="100" />
+          <input
+            matInput
+            formControlName="marca"
+            maxlength="100"
+            [matAutocomplete]="autoMarca"
+            placeholder="Escolha ou digite uma marca"
+          />
+          <mat-autocomplete #autoMarca="matAutocomplete" (optionSelected)="marcaSelecionada($event.option.value)">
+            @for (marca of marcasFiltradas(); track marca) {
+              <mat-option [value]="marca">{{ marca }}</mat-option>
+            }
+          </mat-autocomplete>
           @if (form.controls.marca.hasError('required') && form.controls.marca.touched) {
             <mat-error>Marca é obrigatória</mat-error>
           }
@@ -20,7 +31,18 @@
 
         <mat-form-field appearance="outline">
           <mat-label>Modelo</mat-label>
-          <input matInput formControlName="modelo" maxlength="100" />
+          <input
+            matInput
+            formControlName="modelo"
+            maxlength="100"
+            [matAutocomplete]="autoModelo"
+            placeholder="Escolha ou digite um modelo"
+          />
+          <mat-autocomplete #autoModelo="matAutocomplete">
+            @for (modelo of modelosFiltrados(); track modelo) {
+              <mat-option [value]="modelo">{{ modelo }}</mat-option>
+            }
+          </mat-autocomplete>
           @if (form.controls.modelo.hasError('required') && form.controls.modelo.touched) {
             <mat-error>Modelo é obrigatório</mat-error>
           }
@@ -47,7 +69,18 @@
 
         <mat-form-field appearance="outline">
           <mat-label>Cor</mat-label>
-          <input matInput formControlName="cor" maxlength="50" />
+          <input
+            matInput
+            formControlName="cor"
+            maxlength="50"
+            [matAutocomplete]="autoCor"
+            placeholder="Escolha ou digite uma cor"
+          />
+          <mat-autocomplete #autoCor="matAutocomplete">
+            @for (cor of coresFiltradas(); track cor) {
+              <mat-option [value]="cor">{{ cor }}</mat-option>
+            }
+          </mat-autocomplete>
           @if (form.controls.cor.hasError('required') && form.controls.cor.touched) {
             <mat-error>Cor é obrigatória</mat-error>
           }
@@ -73,11 +106,12 @@
 
       <div class="form-actions">
         <button mat-button type="button" (click)="cancelar()">Cancelar</button>
-        <button mat-flat-button color="primary" type="submit" [disabled]="salvando()">
+        <button mat-flat-button color="primary" type="submit" class="btn-salvar" [disabled]="salvando()">
           @if (salvando()) {
-            <mat-spinner diameter="18" />
+            <mat-spinner diameter="18" class="btn-spinner" />
+            <span>Salvando…</span>
           } @else {
-            Salvar
+            <span>Salvar</span>
           }
         </button>
       </div>

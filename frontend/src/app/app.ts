@@ -7,7 +7,9 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatToolbarModule } from '@angular/material/toolbar';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { map } from 'rxjs';
+import { ThemeService } from './core/services/theme.service';
 
 interface NavLink {
   path: string;
@@ -27,12 +29,14 @@ interface NavLink {
     MatListModule,
     MatIconModule,
     MatButtonModule,
+    MatTooltipModule,
   ],
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })
 export class App {
   private readonly breakpointObserver = inject(BreakpointObserver);
+  protected readonly themeService = inject(ThemeService);
 
   protected readonly navLinks: NavLink[] = [
     { path: '/dashboard', label: 'Dashboard', icon: 'dashboard' },

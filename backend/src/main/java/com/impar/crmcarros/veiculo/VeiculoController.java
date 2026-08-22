@@ -5,6 +5,7 @@ import com.impar.crmcarros.veiculo.dto.VeiculoResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -39,6 +40,21 @@ public class VeiculoController {
     @GetMapping("/{id}")
     public VeiculoResponse buscarPorId(@PathVariable Long id) {
         return service.buscarPorId(id);
+    }
+
+    @GetMapping("/marcas")
+    public List<String> listarMarcas() {
+        return service.listarMarcas();
+    }
+
+    @GetMapping("/modelos")
+    public List<String> listarModelosPorMarca(@RequestParam String marca) {
+        return service.listarModelosPorMarca(marca);
+    }
+
+    @GetMapping("/cores")
+    public List<String> listarCores() {
+        return service.listarCores();
     }
 
     @PostMapping

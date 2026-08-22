@@ -40,6 +40,21 @@ public class VeiculoService {
         return VeiculoMapper.toResponse(buscarEntidadePorId(id));
     }
 
+    @Transactional(readOnly = true)
+    public List<String> listarMarcas() {
+        return repository.findDistinctMarcas();
+    }
+
+    @Transactional(readOnly = true)
+    public List<String> listarModelosPorMarca(String marca) {
+        return repository.findDistinctModelosPorMarca(marca);
+    }
+
+    @Transactional(readOnly = true)
+    public List<String> listarCores() {
+        return repository.findDistinctCores();
+    }
+
     public VeiculoResponse criar(VeiculoRequest request) {
         Veiculo veiculo = repository.save(VeiculoMapper.toEntity(request));
         return VeiculoMapper.toResponse(veiculo);

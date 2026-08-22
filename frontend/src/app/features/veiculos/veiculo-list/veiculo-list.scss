@@ -8,6 +8,21 @@ table {
 }
 
 .col-acoes {
-  width: 140px;
+  width: 132px;
+  white-space: nowrap;
   text-align: right;
+  padding-right: 8px !important;
+}
+
+.col-acoes button {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+}
+
+.col-acoes .mat-mdc-icon-button svg,
+.col-acoes .mat-mdc-icon-button .mat-icon {
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
 }

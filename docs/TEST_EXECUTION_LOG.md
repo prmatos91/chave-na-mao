@@ -324,7 +324,43 @@ Depois do push do repositório, o workflow `.github/workflows/ci.yml` disparou a
 
 Confirmando, num ambiente completamente independente da máquina de desenvolvimento (runner Ubuntu do GitHub, Docker Engine padrão): os 20 testes do backend passam de verdade — **incluindo o teste contra PostgreSQL real via Testcontainers**, que nesse ambiente não precisou pular (ao contrário da máquina de desenvolvimento local, onde ele pula por causa da incompatibilidade documentada na seção 5.2); os testes do frontend passam; a imagem Docker builda; a stack completa sobe saudável; e os 7 testes E2E do Playwright passam contra a aplicação real rodando em containers. Esse foi o fechamento do ciclo completo de validação descrito neste documento — do primeiro `mvnw test` local até o pipeline de CI verde na infraestrutura real do GitHub.
 
-## 6. Resumo geral
+## 6. Fase 3 — polimento visual (i18n, tema, autocomplete, coluna de ações)
+
+Depois do repositório publicado, foi pedida uma rodada de polimento visual: paginação em português, correção de quebra de linha na coluna de ações, autocomplete de marca/modelo/cor no formulário de veículo, e um alternador de tema claro/escuro.
+
+### 6.1 Bug real: `ThemeService` quebrando os testes existentes
+
+Ao adicionar o `ThemeService` (acesso a `localStorage`/`window.matchMedia` no construtor, injetado no componente raiz `App`), rodar `npm test` quebrou 2 dos 11 testes que já existiam e passavam:
+
+```
+TypeError: Cannot read properties of undefined (reading 'getItem')
+  ❯ ThemeService.temaInicialEscuro src/app/core/services/theme.service.ts:21:32
+```
+
+**Causa**: o ambiente de testes (Vitest, não um navegador real) não fornece `localStorage` da mesma forma que um navegador — o `App.spec.ts` injeta `ThemeService` transitivamente (é usado no template do componente raiz), então qualquer teste que monta o `App` quebrava.
+
+**Correção**: todo acesso a `localStorage`, `window` e `document` no `ThemeService` foi reescrito para ser defensivo (`typeof x !== 'undefined'`, com `try/catch` no acesso ao `localStorage`), em vez de assumir que esses globals sempre existem. Depois da correção:
+
+```
+Test Files  4 passed (4)
+     Tests  11 passed (11)
+```
+
+Esse é exatamente o tipo de coisa que só aparece rodando os testes de verdade depois de qualquer mudança — sem rodar `npm test` neste momento, esse bug teria ido para o commit.
+
+### 6.2 Verificação manual das melhorias
+
+Depois do rebuild da stack via Docker, cada item foi conferido visualmente no navegador (não só assumido a partir do código):
+
+- Paginação: "Itens por página", "Próxima página" etc. em português, e o intervalo mostrado como "1 – 8 de 8" nas 3 listagens.
+- Coluna de Ações: os 3 ícones (visualizar/editar/excluir) permanecem numa única linha, sem quebra.
+- Autocomplete de veículo: digitar "Toy" no campo Marca filtra para "Toyota"; selecionar "Toyota" faz o campo Modelo carregar só "Corolla" (o único modelo dessa marca no seed) — confirmando a cascata marca → modelo funcionando contra a API real (`GET /api/veiculos/modelos?marca=Toyota`).
+- Tema: o botão no canto superior direito alterna toda a interface entre claro e escuro instantaneamente, com o ícone e o tooltip mudando de acordo ("Mudar para modo escuro" / "Mudar para modo claro"); a preferência sobrevive a navegação entre páginas.
+- Diagrama Mermaid do `AGENT_GUIDE.md`: a primeira versão (com aspas aninhadas dentro de um node em formato cilindro) não renderizou no GitHub, ficando como bloco de código cru — sintaxe simplificada e confirmada renderizando corretamente via inspeção do DOM real da página no GitHub (o elemento de destino passou a conter um `<iframe>` para `viewscreen.githubusercontent.com/markdown/mermaid`, o serviço oficial do GitHub para isso) e depois visualmente pelo usuário.
+
+Testes automatizados re-executados depois de todas as mudanças desta seção: backend 18/18, frontend 11/11, Playwright 7/7 — todos passando, sem regressão nos fluxos existentes (o formulário de veículo mudou de inputs de texto simples para autocomplete, mas os testes E2E que usam `.fill()` continuaram funcionando sem alteração, já que o autocomplete aceita texto livre).
+
+## 7. Resumo geral
 
 | Suíte | Execuções até passar | Falhas reais encontradas |
 |---|---|---|
@@ -337,5 +373,6 @@ Confirmando, num ambiente completamente independente da máquina de desenvolvime
 | Testcontainers (Fase 2) | Pula localmente (ambiente), passa no CI | incompatibilidade Docker Desktop 29.x × Testcontainers 1.21.3 (local); driver do datasource nao sobrescrito (só apareceu no CI) |
 | Playwright E2E (Fase 2) | 3 | build desatualizado no container; seletor `.last()` ambiguo; paginacao escondendo registro criado |
 | Pipeline de CI real (GitHub Actions) | 2 | job do backend falhando por causa do bug do driver do Testcontainers (só visível ali) |
+| Polimento visual - `npm test` (Fase 3) | 2 | `ThemeService` acessando `localStorage`/`window` sem guarda, quebrando testes existentes |
 
 Todas as falhas listadas foram reais (não simuladas), encontradas ao executar os comandos durante o desenvolvimento assistido por IA, e corrigidas antes da entrega — inclusive uma que só foi possível encontrar rodando o pipeline de CI de verdade, depois do push.

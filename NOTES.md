@@ -20,6 +20,8 @@ O desafio deixa alguns pontos de negócio em aberto de propósito, pedindo que p
 - **Playwright para os testes E2E, em vez de Cypress**: integra melhor com pipelines de CI modernos, é mais rápido para rodar localmente, e tem um modelo de auto-espera (`auto-waiting`) que reduz flakiness em UIs assíncronas como esta.
 - **Configuração de API do frontend via `env.js` gerado em runtime pelo Nginx**, em vez dos `environment.ts` estáticos do Angular: permite trocar a URL da API sem rebuildar a imagem, o que é mais alinhado com "configuração por variáveis de ambiente" também no frontend (não só no backend).
 - **Angular Material** como biblioteca de componentes: acelera a entrega de uma UI consistente e responsiva sem exigir CSS extensivo escrito à mão, dado o prazo do desafio.
+- **Tema claro/escuro via Angular Material 3 nativo** (`theme-type: light`/`dark` no mesmo `mat.theme()`), não uma biblioteca de terceiros: a M3 já foi desenhada para isso, então trocar de tema é só alternar uma classe no `<html>` — sem duplicar variáveis CSS custom nem manter uma segunda paleta manualmente.
+- **Autocomplete de marca/modelo/cor com texto livre, não uma lista fechada (`select`)**: sugere os valores já cadastrados (modelo filtra em cascata pela marca escolhida) mas nunca impede cadastrar uma marca/modelo/cor nova — uma revenda real recebe carros de marcas que ainda não tem no sistema, então travar o campo numa lista fixa seria um problema, não uma melhoria.
 
 ## Limitações conhecidas
 

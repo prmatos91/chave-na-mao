@@ -1,3 +1,15 @@
 mat-form-field {
   width: 100%;
 }
+
+.btn-salvar {
+  min-width: 112px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.btn-spinner {
+  display: inline-flex;
+}
