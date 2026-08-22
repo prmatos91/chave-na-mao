@@ -50,7 +50,7 @@
 
         <mat-form-field appearance="outline">
           <mat-label>Ano</mat-label>
-          <input matInput type="number" formControlName="ano" />
+          <input matInput type="number" formControlName="ano" selectOnFocus />
           @if (form.controls.ano.hasError('required') && form.controls.ano.touched) {
             <mat-error>Ano é obrigatório</mat-error>
           }
@@ -58,7 +58,7 @@
 
         <mat-form-field appearance="outline">
           <mat-label>Preço (R$)</mat-label>
-          <input matInput type="number" step="0.01" formControlName="preco" />
+          <input matInput type="number" step="0.01" formControlName="preco" selectOnFocus />
           @if (form.controls.preco.hasError('required') && form.controls.preco.touched) {
             <mat-error>Preço é obrigatório</mat-error>
           }
@@ -88,7 +88,7 @@
 
         <mat-form-field appearance="outline">
           <mat-label>Quilometragem</mat-label>
-          <input matInput type="number" formControlName="quilometragem" />
+          <input matInput type="number" formControlName="quilometragem" selectOnFocus />
           @if (form.controls.quilometragem.hasError('required') && form.controls.quilometragem.touched) {
             <mat-error>Quilometragem é obrigatória</mat-error>
           }

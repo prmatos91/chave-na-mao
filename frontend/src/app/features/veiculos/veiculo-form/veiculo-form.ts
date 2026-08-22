@@ -13,6 +13,7 @@ import { debounceTime } from 'rxjs';
 import { StatusVeiculo, VeiculoRequest } from '../../../core/models/veiculo.model';
 import { NotificationService } from '../../../core/services/notification.service';
 import { VeiculoService } from '../../../core/services/veiculo.service';
+import { SelectOnFocusDirective } from '../../../shared/directives/select-on-focus.directive';
 import { STATUS_VEICULO_LABELS, enumValues } from '../../../shared/utils/labels';
 
 @Component({
@@ -28,6 +29,7 @@ import { STATUS_VEICULO_LABELS, enumValues } from '../../../shared/utils/labels'
     MatInputModule,
     MatProgressSpinnerModule,
     MatSelectModule,
+    SelectOnFocusDirective,
   ],
   templateUrl: './veiculo-form.html',
   styleUrl: './veiculo-form.scss',

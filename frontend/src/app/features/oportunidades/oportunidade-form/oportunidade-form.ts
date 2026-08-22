@@ -16,6 +16,7 @@ import { ClienteService } from '../../../core/services/cliente.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { OportunidadeService } from '../../../core/services/oportunidade.service';
 import { VeiculoService } from '../../../core/services/veiculo.service';
+import { SelectOnFocusDirective } from '../../../shared/directives/select-on-focus.directive';
 import { STATUS_OPORTUNIDADE_LABELS, enumValues } from '../../../shared/utils/labels';
 
 @Component({
@@ -30,6 +31,7 @@ import { STATUS_OPORTUNIDADE_LABELS, enumValues } from '../../../shared/utils/la
     MatInputModule,
     MatProgressSpinnerModule,
     MatSelectModule,
+    SelectOnFocusDirective,
   ],
   templateUrl: './oportunidade-form.html',
   styleUrl: './oportunidade-form.scss',

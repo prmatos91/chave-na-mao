@@ -360,7 +360,38 @@ Depois do rebuild da stack via Docker, cada item foi conferido visualmente no na
 
 Testes automatizados re-executados depois de todas as mudanças desta seção: backend 18/18, frontend 11/11, Playwright 7/7 — todos passando, sem regressão nos fluxos existentes (o formulário de veículo mudou de inputs de texto simples para autocomplete, mas os testes E2E que usam `.fill()` continuaram funcionando sem alteração, já que o autocomplete aceita texto livre).
 
-## 7. Resumo geral
+### 6.3 Bug de UX real: zero padrão do campo Preço não some ao digitar, e cobertura de testes da Fase 3
+
+Depois de usar o formulário de veículo de verdade no navegador, foi reportado que digitar um preço (ex. "100000") no campo `Preço (R$)`, que começa com valor `0`, não substituía o zero — o resultado era um valor com zero à esquerda que precisava ser apagado manualmente. Reproduzido no navegador antes de qualquer alteração.
+
+**Correção**: nova diretiva `shared/directives/select-on-focus.directive.ts` (`selectOnFocus`), que seleciona todo o conteúdo do `<input>` ao ganhar foco — assim a primeira tecla digitada substitui o "0" em vez de concatenar. Aplicada nos campos `ano`, `preco`, `quilometragem` (veículo) e `valorProposto` (oportunidade). Corrigido e confirmado manualmente no navegador (digitar "150000" no campo Preço resultou em "150000", não "0150000").
+
+Em seguida, respondendo à pergunta "os testes automatizados foram atualizados, inclusive via Playwright?" — a resposta honesta no momento era não, então a cobertura foi adicionada:
+
+- **Testes unitários novos** (Vitest): `theme.service.spec.ts` (3 testes — respeita preferência salva clara/escura, `toggle()` alterna signal + classe + persiste), `paginator-intl-pt-br.spec.ts` (3 testes — labels em português, formatação de intervalo, caso de lista vazia), `select-on-focus.directive.spec.ts` (1 teste — seleciona todo o conteúdo do input ao focar). Suíte completa depois: `Test Files 7 passed (7)`, `Tests 18 passed (18)`.
+- **Testes E2E novos** (Playwright): 2 testes adicionados a `veiculo.spec.ts` (o fix do campo Preço, usando `pressSequentially()` — não `fill()`, que não dispara o evento de foco real e não exercitaria o bug) e um novo arquivo `ui.spec.ts` com 3 testes (marca "Chave na Mão" na sidenav/título, paginação em português, toggle de tema claro/escuro com persistência após navegação).
+
+**Duas falhas reais encontradas ao rodar a suíte pela primeira vez** (`npx playwright test`, 10 passaram, 2 falharam):
+
+1. `ui.spec.ts` — "mostra os textos do paginador traduzidos" falhava com `getByText(/^\d+\s*–\s*\d+ de \d+$/)` não encontrando o elemento, mesmo com o texto certo visivelmente na tela. Investigado com um script Node isolado batendo direto na API do Playwright (não só lendo o DOM): o `MatPaginatorIntl` do Angular Material renderiza o rótulo como `" 1 – 8 de 8 "`, com um espaço em cada borda. O Playwright normaliza (colapsa) espaços internos ao comparar texto, mas **não remove** o espaço das bordas — então um regex ancorado em `^\d` (sem tolerar espaço antes) nunca casava. Corrigido trocando o regex para `/^\s*\d+\s*–\s*\d+ de \d+\s*$/`.
+2. `veiculo.spec.ts` — "autocomplete de marca... e filtra modelo em cascata" falhava com `strict mode violation: getByLabel('Marca') resolved to 2 elements` (o input e o painel de opções do `MatAutocomplete`, que compartilham o mesmo `aria-labelledby`). Corrigido trocando `getByLabel('Marca')`/`getByLabel('Modelo')` por `getByRole('combobox', { name: '...' })`, que aponta só para o input.
+
+Depois das duas correções, suíte completa: `12 passed (10.5s)` (Playwright) e `Tests 18 passed (18)` (Vitest) — nenhuma delas era um bug do produto, ambas eram os próprios testes escritos de forma sutilmente errada; documentado aqui porque são pegadinhas reais do Playwright/Material que provavelmente vão se repetir em testes futuros (ver `docs/AGENT_GUIDE.md`, seção sobre padrões de frontend).
+
+## 7. Fase 4 — logo e favicon
+
+O usuário pediu uma logo para dois lugares (ícone da marca na sidenav e favicon da aba), gerada externamente via Gemini a partir de um prompt preparado com as cores exatas do tema (`primary: #005cbb`, `tertiary: #343dff`, extraídas ao vivo do `getComputedStyle` da aplicação rodando) e salva em `frontend/public/logo-source.png`.
+
+**Bug real encontrado no arquivo recebido**: o arquivo salvo pelo usuário era, na prática, um **JPEG sem canal alpha** (confirmado com `file` e `sips -g hasAlpha` → `no`), apesar da extensão `.png` e de parecer visualmente "transparente" — o modelo de geração de imagem tinha desenhado o padrão xadrez de transparência como pixels comuns, cinza-claro/branco (confirmado amostrando pixels com Python/Pillow: fundo em `(255,255,255)` e `(218,218,218)`). Usar esse arquivo direto teria colocado um quadriculado cinza atrás do ícone em vez de fundo transparente de verdade.
+
+**Correção**: script Python (Pillow) que remove o fundo por croma — para cada pixel, calcula `chroma = max(r,g,b) - min(r,g,b)` (pixels neutros/cinza têm chroma baixo, o azul saturado da logo tem chroma alto) e mapeia isso para o canal alfa, com uma rampa suave entre os limiares (evita uma borda serrilhada). Confirmado pixel a pixel depois (não só visualmente) que o fundo ficou com alfa `0` e o centro do ícone com alfa `255`. Em seguida, a arte foi recortada para a caixa delimitadora do conteúdo visível (`Image.getbbox()`), recentralizada com uma margem de 8% e exportada em duas versões: `frontend/public/logo.png` (512×512, para o ícone da sidenav) e `frontend/public/favicon.ico` (multi-resolução 16/32/48/64px, gerado da mesma arte).
+
+Depois de trocar `<mat-icon>directions_car</mat-icon>` por `<img src="logo.png">` em `app.html` e rebuildar o container do frontend (`docker compose up --build frontend`), verificado:
+- Visualmente no navegador: o ícone aparece limpo, sem qualquer resquício do quadriculado, ao lado do texto "Chave na Mão" na sidenav.
+- Por requisição HTTP direta (`fetch('/favicon.ico', {cache: 'no-store'})`): o Nginx serve o novo arquivo de 652 bytes (o navegador tinha cacheado agressivamente o favicon antigo de 15KB numa primeira checagem sem `cache: 'no-store'` — comportamento normal de cache de favicon, não um bug da aplicação).
+- Suítes completas re-executadas depois da troca: `Tests 18 passed (18)` (Vitest) e `12 passed (10.7s)` (Playwright) — nenhuma regressão (nenhum teste dependia do ícone antigo, só do texto "Chave na Mão").
+
+## 8. Resumo geral
 
 | Suíte | Execuções até passar | Falhas reais encontradas |
 |---|---|---|
@@ -374,5 +405,7 @@ Testes automatizados re-executados depois de todas as mudanças desta seção: b
 | Playwright E2E (Fase 2) | 3 | build desatualizado no container; seletor `.last()` ambiguo; paginacao escondendo registro criado |
 | Pipeline de CI real (GitHub Actions) | 2 | job do backend falhando por causa do bug do driver do Testcontainers (só visível ali) |
 | Polimento visual - `npm test` (Fase 3) | 2 | `ThemeService` acessando `localStorage`/`window` sem guarda, quebrando testes existentes |
+| Cobertura de testes da Fase 3 - `npx playwright test` (Fase 3) | 2 | regex de `getByText` não tolerava espaço nas bordas do rótulo do `MatPaginator`; `getByLabel('Marca')` ambíguo entre input e painel do `MatAutocomplete` |
+| Logo e favicon - processamento de imagem (Fase 4) | 1 (após diagnóstico com `file`/`sips`/Pillow) | arquivo `.png` recebido era na verdade um JPEG sem canal alpha, com o "fundo transparente" desenhado como pixels de xadrez cinza/branco comuns |
 
 Todas as falhas listadas foram reais (não simuladas), encontradas ao executar os comandos durante o desenvolvimento assistido por IA, e corrigidas antes da entrega — inclusive uma que só foi possível encontrar rodando o pipeline de CI de verdade, depois do push.
