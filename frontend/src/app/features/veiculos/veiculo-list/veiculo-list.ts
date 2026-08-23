@@ -1,7 +1,7 @@
 import { CurrencyPipe, DecimalPipe } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { ReactiveFormsModule, FormControl } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -10,6 +10,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
+import { MatSortModule, Sort } from '@angular/material/sort';
 import { MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { debounceTime } from 'rxjs';
@@ -38,6 +39,7 @@ import { STATUS_VEICULO_COLOR, STATUS_VEICULO_LABELS, enumValues } from '../../.
     MatPaginatorModule,
     MatProgressSpinnerModule,
     MatSelectModule,
+    MatSortModule,
     MatTableModule,
     MatTooltipModule,
   ],
@@ -46,6 +48,7 @@ import { STATUS_VEICULO_COLOR, STATUS_VEICULO_LABELS, enumValues } from '../../.
 })
 export class VeiculoList implements OnInit {
   private readonly veiculoService = inject(VeiculoService);
+  private readonly route = inject(ActivatedRoute);
   private readonly dialog = inject(MatDialog);
   private readonly notification = inject(NotificationService);
 
@@ -65,6 +68,7 @@ export class VeiculoList implements OnInit {
   protected readonly loading = signal(true);
   protected readonly pageIndex = signal(0);
   protected readonly pageSize = signal(10);
+  protected readonly sortState = signal<Sort>({ active: '', direction: '' });
 
   protected readonly statusControl = new FormControl<StatusVeiculo | ''>('');
   protected readonly searchControl = new FormControl('');
@@ -82,6 +86,11 @@ export class VeiculoList implements OnInit {
   }
 
   ngOnInit(): void {
+    const statusParam = this.route.snapshot.queryParamMap.get('status') as StatusVeiculo | null;
+    if (statusParam) {
+      this.statusControl.setValue(statusParam, { emitEvent: false });
+    }
+
     this.carregar();
 
     this.statusControl.valueChanges.subscribe(() => {
@@ -97,12 +106,14 @@ export class VeiculoList implements OnInit {
 
   protected carregar(): void {
     this.loading.set(true);
+    const sort = this.sortState();
     this.veiculoService
       .listar({
         status: this.statusControl.value || undefined,
         q: this.searchControl.value || undefined,
         page: this.pageIndex(),
         size: this.pageSize(),
+        sort: sort.direction ? `${sort.active},${sort.direction}` : undefined,
       })
       .subscribe({
         next: (page) => {
@@ -117,6 +128,12 @@ export class VeiculoList implements OnInit {
   protected onPage(event: PageEvent): void {
     this.pageIndex.set(event.pageIndex);
     this.pageSize.set(event.pageSize);
+    this.carregar();
+  }
+
+  protected onSort(sort: Sort): void {
+    this.sortState.set(sort);
+    this.pageIndex.set(0);
     this.carregar();
   }
 

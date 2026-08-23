@@ -25,14 +25,14 @@
 </div>
 
 <div class="table-wrapper">
-  <table mat-table [dataSource]="data()" class="full-width">
+  <table mat-table [dataSource]="data()" class="full-width" matSort (matSortChange)="onSort($event)">
     <ng-container matColumnDef="nome">
-      <th mat-header-cell *matHeaderCellDef>Nome</th>
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>Nome</th>
       <td mat-cell *matCellDef="let c">{{ c.nome }}</td>
     </ng-container>
 
     <ng-container matColumnDef="email">
-      <th mat-header-cell *matHeaderCellDef>E-mail</th>
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>E-mail</th>
       <td mat-cell *matCellDef="let c">{{ c.email }}</td>
     </ng-container>
 
@@ -42,7 +42,7 @@
     </ng-container>
 
     <ng-container matColumnDef="interesse">
-      <th mat-header-cell *matHeaderCellDef>Interesse</th>
+      <th mat-header-cell *matHeaderCellDef mat-sort-header="interessePrincipal">Interesse</th>
       <td mat-cell *matCellDef="let c">{{ interesseLabel(c.interessePrincipal) }}</td>
     </ng-container>
 

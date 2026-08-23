@@ -411,7 +411,35 @@ totalOportunidades: 18 (5 Novo lead, 4 Em negociacao, 3 Proposta enviada, 4 Vend
 
 Verificação visual final no navegador: paginação da listagem de veículos mostrando `1 – 10 de 32` (antes `1 – 8 de 8`, cabia tudo numa página só); formulário de novo veículo com marca "Toyota" selecionada mostrando os 3 modelos (Corolla, Hilux, Yaris) no autocomplete de modelo, confirmando a cascata marca→modelo com dados reais de verdade, não só com o único modelo por marca que existia antes.
 
-## 9. Resumo geral
+## 9. Fase 6 — usabilidade: responsividade, ordenação, navegação cruzada
+
+O usuário mandou um print real do dashboard no modo mobile (DevTools, iPhone 15 Pro Max, 430×932) mostrando os 3 cards de indicadores com o ícone/número/label "colados" na borda esquerda do card em vez de centralizados, e pediu sugestões de melhoria de frontend em geral.
+
+### 9.1 Bug real de responsividade (a partir do print do usuário)
+
+**Causa**: `.stat-card` em `dashboard.scss` era `display: flex; align-items: center` sem `justify-content` — em telas largas isso passava despercebido porque o card tem 3 colunas lado a lado e cada um já é estreito; no card em largura total do mobile (1 coluna), o conteúdo compacto ficava sozinho colado à esquerda, com um vão vazio à direita.
+
+**Correção**: adicionado `justify-content: center` em `.stat-card`. Confirmado com um screenshot do Playwright no viewport exato do print original (430×932) — conteúdo centralizado nos 3 cards.
+
+### 9.2 Ordenação de colunas (`MatSort`) nas 3 listagens
+
+Adicionado `matSort`/`mat-sort-header` nas tabelas de veículo, cliente e oportunidade, enviando `sort=<campo>,<asc|desc>` ao backend — que já suporta isso nativamente via `Pageable`/`@PageableDefault`, sem nenhuma mudança no backend. Confirmado por `curl` antes de mexer no frontend que sort em propriedade aninhada funciona (`sort=cliente.nome,asc`, `sort=veiculo.marca,asc`) graças ao `JpaSpecificationExecutor` do Spring Data.
+
+**Investigação de um "bug" que não era bug**: depois de implementar e rodar `ng build` com sucesso (sem erros de compilação) e reconstruir o container Docker, a verificação visual pela ferramenta de navegador embutida mostrava os cabeçalhos de coluna como texto plano, sem o botão de ordenação — parecia que `MatSortHeader` (que é um *componente* Angular Material com template próprio, não só uma diretiva de atributo) simplesmente não estava sendo aplicado. Antes de assumir que era um bug real, foi feita uma investigação em camadas: `grep` confirmando que o bundle servido pelo Nginx continha o código-fonte esperado (`mat-sort-header`, `onSort`); inspeção do DOM ao vivo via JavaScript não mostrando os atributos/classes esperados no `<th>`; teste com aba nova, sem cache de service worker (nenhum registrado). Só ao trocar de ferramenta — um script Playwright isolado abrindo um Chromium novo e navegando para a mesma URL — ficou claro que o `<th>` renderizava perfeitamente com `mat-sort-header`, a estrutura interna correta e `aria-sort`. A causa raiz era a aba específica da ferramenta de navegador embutida usada nesta sessão, que já vinha apresentando timeouts/estado travado antes disso — não o código. Verificado então via Playwright que clicar no cabeçalho "Preço" de fato reordena as linhas e envia `sort=preco,asc`/`sort=preco,desc` para a API. Lição registrada em `docs/AGENT_GUIDE.md`: não confiar cegamente numa ferramenta de inspeção visual que já deu sinais de instabilidade — cruzar com uma fonte independente (aqui, um script Playwright direto) antes de declarar algo quebrado.
+
+### 9.3 Tabela com rolagem horizontal própria em mobile
+
+`.table-wrapper { overflow-x: auto; }` adicionado nas 3 listagens (antes não existia nenhuma regra de overflow, então uma tabela larga podia estourar a largura da tela em vez de rolar dentro do próprio contêiner). Confirmado via Playwright (viewport 375×800) que `document.body.scrollWidth === document.body.clientWidth` — ou seja, a página em si não rola mais horizontalmente, só a tabela.
+
+### 9.4 Dashboard clicável e entidades relacionadas nas telas de detalhe
+
+Os 3 cards de indicadores e as linhas de "Veículos/Oportunidades por status" do dashboard agora são links (`routerLink` + `queryParams`) para a listagem correspondente, já filtrada por status quando aplicável — as listagens leem `?status=X` da URL no `ngOnInit` e pré-selecionam o filtro. `cliente-detail` passou a mostrar as oportunidades daquele cliente, e `veiculo-detail` os clientes interessados naquele veículo — reaproveitando os filtros `clienteId`/`veiculoId` que o endpoint de oportunidades já tinha (usados pelos dropdowns de `oportunidade-list`), sem precisar de endpoint novo no backend.
+
+**Bug real de teste encontrado ao rodar a suíte Playwright depois dessa mudança** (`npx playwright test`, 13 rodaram, 2 falharam): `dashboard.spec.ts` e `ui.spec.ts` localizavam o link "Veículos" do menu lateral com `page.getByRole('link', { name: 'Veículos' })` — sem `exact: true`, essa busca faz correspondência por substring, e agora existe um segundo link cujo nome acessível é "Veículos cadastrados" (o novo card do dashboard), causando `strict mode violation` (2 elementos encontrados). Corrigido adicionando `exact: true` nos 3 links do menu lateral testados. Depois da correção, mais 2 testes novos foram adicionados (ordenação de coluna e navegação por entidades relacionadas) e a suíte completa passou: `15 passed`.
+
+Suítes completas depois de toda a Fase 6: `Tests 18 passed (18)` (Vitest, precisou de um ajuste em `dashboard.spec.ts` — o teste não fornecia `ActivatedRoute`/`Router` no `TestBed`, necessário agora que o template usa `routerLink`; corrigido com `provideRouter([])`, seguindo o mesmo padrão já usado em `veiculo-form.spec.ts`) e `15 passed` (Playwright).
+
+## 10. Resumo geral
 
 | Suíte | Execuções até passar | Falhas reais encontradas |
 |---|---|---|
@@ -428,5 +456,7 @@ Verificação visual final no navegador: paginação da listagem de veículos mo
 | Cobertura de testes da Fase 3 - `npx playwright test` (Fase 3) | 2 | regex de `getByText` não tolerava espaço nas bordas do rótulo do `MatPaginator`; `getByLabel('Marca')` ambíguo entre input e painel do `MatAutocomplete` |
 | Logo e favicon - processamento de imagem (Fase 4) | 1 (após diagnóstico com `file`/`sips`/Pillow) | arquivo `.png` recebido era na verdade um JPEG sem canal alpha, com o "fundo transparente" desenhado como pixels de xadrez cinza/branco comuns |
 | Mais massa de dados - `npx playwright test` (Fase 5) | 2 | `oportunidade.spec.ts` procurava a linha recém-criada sem filtrar, e ela caiu fora da 1ª página com 18+ registros de seed |
+| Usabilidade: responsividade/sort/navegação - `npx playwright test` (Fase 6) | 2 | `getByRole('link', {name: 'Veículos'})` sem `exact: true` virou ambíguo depois do novo card clicável "Veículos cadastrados" no dashboard |
+| Usabilidade - `ng test` (Fase 6) | 2 | `dashboard.spec.ts` não fornecia `ActivatedRoute`/`Router` no `TestBed`, necessário para o novo `routerLink` no template |
 
 Todas as falhas listadas foram reais (não simuladas), encontradas ao executar os comandos durante o desenvolvimento assistido por IA, e corrigidas antes da entrega — inclusive uma que só foi possível encontrar rodando o pipeline de CI de verdade, depois do push.

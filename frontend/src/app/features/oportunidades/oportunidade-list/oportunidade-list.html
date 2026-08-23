@@ -39,26 +39,26 @@
 </div>
 
 <div class="table-wrapper">
-  <table mat-table [dataSource]="data()" class="full-width">
+  <table mat-table [dataSource]="data()" class="full-width" matSort (matSortChange)="onSort($event)">
     <ng-container matColumnDef="cliente">
-      <th mat-header-cell *matHeaderCellDef>Cliente</th>
+      <th mat-header-cell *matHeaderCellDef mat-sort-header="cliente.nome">Cliente</th>
       <td mat-cell *matCellDef="let o">{{ o.cliente.nome }}</td>
     </ng-container>
 
     <ng-container matColumnDef="veiculo">
-      <th mat-header-cell *matHeaderCellDef>Veículo</th>
+      <th mat-header-cell *matHeaderCellDef mat-sort-header="veiculo.marca">Veículo</th>
       <td mat-cell *matCellDef="let o">{{ o.veiculo.marca }} {{ o.veiculo.modelo }}</td>
     </ng-container>
 
     <ng-container matColumnDef="status">
-      <th mat-header-cell *matHeaderCellDef>Status</th>
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>Status</th>
       <td mat-cell *matCellDef="let o">
         <span class="status-chip" [class]="statusClass(o.status)">{{ statusLabel(o.status) }}</span>
       </td>
     </ng-container>
 
     <ng-container matColumnDef="valorProposto">
-      <th mat-header-cell *matHeaderCellDef>Valor proposto</th>
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>Valor proposto</th>
       <td mat-cell *matCellDef="let o">
         {{ o.valorProposto !== null ? (o.valorProposto | currency: 'BRL') : '—' }}
       </td>

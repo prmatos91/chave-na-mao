@@ -22,24 +22,51 @@
     </div>
   </div>
 
-  <mat-card class="detail-card">
-    <dl class="detail-grid">
-      <div>
-        <dt>E-mail</dt>
-        <dd>{{ c.email }}</dd>
-      </div>
-      <div>
-        <dt>Telefone</dt>
-        <dd>{{ c.telefone }}</dd>
-      </div>
-      <div>
-        <dt>Interesse principal</dt>
-        <dd>{{ interesseLabels[c.interessePrincipal] }}</dd>
-      </div>
-      <div>
-        <dt>Cadastrado em</dt>
-        <dd>{{ c.createdAt | date: 'dd/MM/yyyy HH:mm' }}</dd>
-      </div>
-    </dl>
-  </mat-card>
+  <div class="detail-layout">
+    <mat-card class="detail-card">
+      <dl class="detail-grid">
+        <div>
+          <dt>E-mail</dt>
+          <dd>{{ c.email }}</dd>
+        </div>
+        <div>
+          <dt>Telefone</dt>
+          <dd>{{ c.telefone }}</dd>
+        </div>
+        <div>
+          <dt>Interesse principal</dt>
+          <dd>{{ interesseLabels[c.interessePrincipal] }}</dd>
+        </div>
+        <div>
+          <dt>Cadastrado em</dt>
+          <dd>{{ c.createdAt | date: 'dd/MM/yyyy HH:mm' }}</dd>
+        </div>
+      </dl>
+    </mat-card>
+
+    <mat-card class="related-card">
+      <h2>Oportunidades deste cliente</h2>
+      @if (carregandoOportunidades()) {
+        <div class="related-empty"><mat-spinner diameter="24" /></div>
+      } @else if (oportunidades().length === 0) {
+        <p class="related-empty">Nenhuma oportunidade registrada para este cliente ainda.</p>
+      } @else {
+        <ul class="related-list">
+          @for (o of oportunidades(); track o.id) {
+            <li>
+              <a [routerLink]="['/oportunidades', o.id]" class="related-row">
+                <div class="related-main">
+                  <span class="related-title">{{ o.veiculo.marca }} {{ o.veiculo.modelo }}</span>
+                  <span class="status-chip" [class]="statusColor[o.status]">{{ statusLabels[o.status] }}</span>
+                </div>
+                <span class="related-value">
+                  {{ o.valorProposto !== null ? (o.valorProposto | currency: 'BRL') : 'Sem valor proposto' }}
+                </span>
+              </a>
+            </li>
+          }
+        </ul>
+      }
+    </mat-card>
+  </div>
 }

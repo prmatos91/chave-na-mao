@@ -8,27 +8,33 @@
   </div>
 } @else if (data(); as d) {
   <div class="stats-grid">
-    <mat-card class="stat-card">
-      <mat-icon class="stat-icon">directions_car</mat-icon>
-      <div>
-        <p class="stat-value">{{ d.totalVeiculos }}</p>
-        <p class="stat-label">Veículos cadastrados</p>
-      </div>
-    </mat-card>
-    <mat-card class="stat-card">
-      <mat-icon class="stat-icon">people</mat-icon>
-      <div>
-        <p class="stat-value">{{ d.totalClientes }}</p>
-        <p class="stat-label">Clientes cadastrados</p>
-      </div>
-    </mat-card>
-    <mat-card class="stat-card">
-      <mat-icon class="stat-icon">trending_up</mat-icon>
-      <div>
-        <p class="stat-value">{{ d.totalOportunidades }}</p>
-        <p class="stat-label">Oportunidades abertas</p>
-      </div>
-    </mat-card>
+    <a routerLink="/veiculos" class="stat-card-link">
+      <mat-card class="stat-card">
+        <mat-icon class="stat-icon">directions_car</mat-icon>
+        <div>
+          <p class="stat-value">{{ d.totalVeiculos }}</p>
+          <p class="stat-label">Veículos cadastrados</p>
+        </div>
+      </mat-card>
+    </a>
+    <a routerLink="/clientes" class="stat-card-link">
+      <mat-card class="stat-card">
+        <mat-icon class="stat-icon">people</mat-icon>
+        <div>
+          <p class="stat-value">{{ d.totalClientes }}</p>
+          <p class="stat-label">Clientes cadastrados</p>
+        </div>
+      </mat-card>
+    </a>
+    <a routerLink="/oportunidades" class="stat-card-link">
+      <mat-card class="stat-card">
+        <mat-icon class="stat-icon">trending_up</mat-icon>
+        <div>
+          <p class="stat-value">{{ d.totalOportunidades }}</p>
+          <p class="stat-label">Oportunidades abertas</p>
+        </div>
+      </mat-card>
+    </a>
   </div>
 
   <div class="summary-grid">
@@ -36,12 +42,16 @@
       <h2>Veículos por status</h2>
       <div class="summary-rows">
         @for (item of d.veiculosPorStatus | keyvalue; track item.key) {
-          <div class="summary-row">
+          <a
+            class="summary-row"
+            routerLink="/veiculos"
+            [queryParams]="{ status: item.key }"
+          >
             <span class="status-chip" [class]="statusVeiculoColor[item.key]">
               {{ statusVeiculoLabels[item.key] }}
             </span>
             <span class="summary-count">{{ item.value }}</span>
-          </div>
+          </a>
         }
       </div>
     </mat-card>
@@ -50,12 +60,16 @@
       <h2>Oportunidades por status</h2>
       <div class="summary-rows">
         @for (item of d.oportunidadesPorStatus | keyvalue; track item.key) {
-          <div class="summary-row">
+          <a
+            class="summary-row"
+            routerLink="/oportunidades"
+            [queryParams]="{ status: item.key }"
+          >
             <span class="status-chip" [class]="statusOportunidadeColor[item.key]">
               {{ statusOportunidadeLabels[item.key] }}
             </span>
             <span class="summary-count">{{ item.value }}</span>
-          </div>
+          </a>
         }
       </div>
     </mat-card>

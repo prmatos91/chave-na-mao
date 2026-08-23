@@ -16,6 +16,7 @@ export interface OportunidadeFiltro {
   veiculoId?: number | null;
   page?: number;
   size?: number;
+  sort?: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -34,6 +35,7 @@ export class OportunidadeService {
     if (filtro.status) params = params.set('status', filtro.status);
     if (filtro.clienteId) params = params.set('clienteId', filtro.clienteId);
     if (filtro.veiculoId) params = params.set('veiculoId', filtro.veiculoId);
+    if (filtro.sort) params = params.set('sort', filtro.sort);
     return this.http.get<Page<Oportunidade>>(this.baseUrl, { params });
   }
 

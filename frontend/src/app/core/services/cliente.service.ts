@@ -10,6 +10,7 @@ export interface ClienteFiltro {
   q?: string;
   page?: number;
   size?: number;
+  sort?: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -27,6 +28,7 @@ export class ClienteService {
       .set('size', filtro.size ?? 10);
     if (filtro.interesse) params = params.set('interesse', filtro.interesse);
     if (filtro.q) params = params.set('q', filtro.q);
+    if (filtro.sort) params = params.set('sort', filtro.sort);
     return this.http.get<Page<Cliente>>(this.baseUrl, { params });
   }
 

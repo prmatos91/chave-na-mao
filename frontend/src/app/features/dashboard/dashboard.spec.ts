@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { DashboardResponse } from '../../core/models/dashboard.model';
 import { DashboardService } from '../../core/services/dashboard.service';
@@ -24,7 +25,7 @@ describe('Dashboard', () => {
 
     await TestBed.configureTestingModule({
       imports: [Dashboard],
-      providers: [{ provide: DashboardService, useValue: dashboardServiceStub }],
+      providers: [provideRouter([]), { provide: DashboardService, useValue: dashboardServiceStub }],
     }).compileComponents();
 
     const fixture = TestBed.createComponent(Dashboard);
@@ -41,7 +42,7 @@ describe('Dashboard', () => {
 
     await TestBed.configureTestingModule({
       imports: [Dashboard],
-      providers: [{ provide: DashboardService, useValue: dashboardServiceStub }],
+      providers: [provideRouter([]), { provide: DashboardService, useValue: dashboardServiceStub }],
     }).compileComponents();
 
     const fixture = TestBed.createComponent(Dashboard);

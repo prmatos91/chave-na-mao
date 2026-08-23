@@ -1,7 +1,7 @@
 import { CurrencyPipe } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -9,6 +9,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
+import { MatSortModule, Sort } from '@angular/material/sort';
 import { MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { forkJoin } from 'rxjs';
@@ -43,6 +44,7 @@ import {
     MatPaginatorModule,
     MatProgressSpinnerModule,
     MatSelectModule,
+    MatSortModule,
     MatTableModule,
     MatTooltipModule,
   ],
@@ -53,6 +55,7 @@ export class OportunidadeList implements OnInit {
   private readonly oportunidadeService = inject(OportunidadeService);
   private readonly clienteService = inject(ClienteService);
   private readonly veiculoService = inject(VeiculoService);
+  private readonly route = inject(ActivatedRoute);
   private readonly dialog = inject(MatDialog);
   private readonly notification = inject(NotificationService);
 
@@ -63,6 +66,7 @@ export class OportunidadeList implements OnInit {
   protected readonly loading = signal(true);
   protected readonly pageIndex = signal(0);
   protected readonly pageSize = signal(10);
+  protected readonly sortState = signal<Sort>({ active: '', direction: '' });
 
   protected readonly clientes = signal<Cliente[]>([]);
   protected readonly veiculos = signal<Veiculo[]>([]);
@@ -84,6 +88,11 @@ export class OportunidadeList implements OnInit {
   }
 
   ngOnInit(): void {
+    const statusParam = this.route.snapshot.queryParamMap.get('status') as StatusOportunidade | null;
+    if (statusParam) {
+      this.statusControl.setValue(statusParam, { emitEvent: false });
+    }
+
     forkJoin({
       clientes: this.clienteService.listar({ size: 200 }),
       veiculos: this.veiculoService.listar({ size: 200 }),
@@ -110,6 +119,7 @@ export class OportunidadeList implements OnInit {
 
   protected carregar(): void {
     this.loading.set(true);
+    const sort = this.sortState();
     this.oportunidadeService
       .listar({
         status: this.statusControl.value || undefined,
@@ -117,6 +127,7 @@ export class OportunidadeList implements OnInit {
         veiculoId: this.veiculoControl.value || undefined,
         page: this.pageIndex(),
         size: this.pageSize(),
+        sort: sort.direction ? `${sort.active},${sort.direction}` : undefined,
       })
       .subscribe({
         next: (page) => {
@@ -134,6 +145,11 @@ export class OportunidadeList implements OnInit {
     this.carregar();
   }
 
+  protected onSort(sort: Sort): void {
+    this.sortState.set(sort);
+    this.pageIndex.set(0);
+    this.carregar();
+  }
 
   protected excluir(oportunidade: Oportunidade): void {
     const data: ConfirmDialogData = {

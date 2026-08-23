@@ -9,6 +9,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
+import { MatSortModule, Sort } from '@angular/material/sort';
 import { MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { debounceTime } from 'rxjs';
@@ -35,6 +36,7 @@ import { INTERESSE_LABELS, enumValues } from '../../../shared/utils/labels';
     MatPaginatorModule,
     MatProgressSpinnerModule,
     MatSelectModule,
+    MatSortModule,
     MatTableModule,
     MatTooltipModule,
   ],
@@ -53,6 +55,7 @@ export class ClienteList implements OnInit {
   protected readonly loading = signal(true);
   protected readonly pageIndex = signal(0);
   protected readonly pageSize = signal(10);
+  protected readonly sortState = signal<Sort>({ active: '', direction: '' });
 
   protected readonly interesseControl = new FormControl<InteressePrincipal | ''>('');
   protected readonly searchControl = new FormControl('');
@@ -80,12 +83,14 @@ export class ClienteList implements OnInit {
 
   protected carregar(): void {
     this.loading.set(true);
+    const sort = this.sortState();
     this.clienteService
       .listar({
         interesse: this.interesseControl.value || undefined,
         q: this.searchControl.value || undefined,
         page: this.pageIndex(),
         size: this.pageSize(),
+        sort: sort.direction ? `${sort.active},${sort.direction}` : undefined,
       })
       .subscribe({
         next: (page) => {
@@ -100,6 +105,12 @@ export class ClienteList implements OnInit {
   protected onPage(event: PageEvent): void {
     this.pageIndex.set(event.pageIndex);
     this.pageSize.set(event.pageSize);
+    this.carregar();
+  }
+
+  protected onSort(sort: Sort): void {
+    this.sortState.set(sort);
+    this.pageIndex.set(0);
     this.carregar();
   }
 

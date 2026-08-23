@@ -10,6 +10,7 @@ export interface VeiculoFiltro {
   q?: string;
   page?: number;
   size?: number;
+  sort?: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -27,6 +28,7 @@ export class VeiculoService {
       .set('size', filtro.size ?? 10);
     if (filtro.status) params = params.set('status', filtro.status);
     if (filtro.q) params = params.set('q', filtro.q);
+    if (filtro.sort) params = params.set('sort', filtro.sort);
     return this.http.get<Page<Veiculo>>(this.baseUrl, { params });
   }
 
