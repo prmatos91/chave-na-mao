@@ -465,6 +465,18 @@ O usuário mandou um print da tela "Editar cliente" apontando que a borda do bot
 
 Suítes completas re-executadas depois: `Tests 18 passed (18)` (Vitest), `15 passed` (Playwright) — nenhuma regressão (mudança é só de espaçamento, não de estrutura/seletores).
 
+### 9.7 Polimento visual das 3 listagens (pedido direto do usuário, sem bug envolvido)
+
+O usuário gostou do visual do dashboard, mas achou as listagens de veículo/cliente/oportunidade "sem vida" em comparação — pediu sugestões de melhoria estética. Antes de implementar, os valores exatos de sombra/borda/fundo do `<mat-card>` do Material foram lidos ao vivo via `getComputedStyle()` (box-shadow com 3 camadas, `border-radius: 12px`, fundo `--mat-sys-surface-container-low`), para que o tratamento do `.table-wrapper` (que é um `<div>` simples, não um `<mat-card>` de verdade) ficasse visualmente idêntico aos cards reais em vez de uma sombra aproximada "no olho".
+
+Mudanças, todas em `styles.scss` (regras globais, então valem para as 3 listagens de uma vez):
+- `.table-wrapper` ganhou fundo, `border-radius: 12px` e a mesma sombra de elevação do `mat-card`.
+- Cabeçalho da tabela (`.mat-mdc-header-row`) com leve contraste de fundo, e linhas com destaque ao passar o mouse (`.mat-mdc-row:hover`).
+- `.page-header h1` ganhou uma barrinha de destaque com gradiente (cores da marca, azul→índigo) embaixo do título — aparece em toda tela que usa `.page-header` (listagens, detalhe, formulário), não só nas 3 pedidas, por consistência.
+- Removidas 3 regras `.table-wrapper { overflow-x: auto; }` duplicadas nos SCSS de cada listagem — já existia (e passou a ganhar o resto do estilo) uma regra `.table-wrapper` global em `styles.scss` que eu não tinha notado antes de fazer a correção de overflow da Fase 6.
+
+Verificado visualmente (light e dark) nas 3 listagens e também nas telas de detalhe/formulário (pra confirmar que a barrinha do título não ficou estranha fora do contexto original do pedido). Suítes completas: `Tests 18 passed (18)` (Vitest), `15 passed` (Playwright).
+
 ## 10. Resumo geral
 
 | Suíte | Execuções até passar | Falhas reais encontradas |
