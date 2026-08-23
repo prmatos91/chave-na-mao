@@ -455,6 +455,16 @@ Suítes completas re-executadas depois: `Tests 18 passed (18)` (Vitest), `15 pas
 
 **Lição registrada em `docs/AGENT_GUIDE.md`**: ao sobrescrever CSS de um componente de terceiros (Angular Material, no caso), declarar todas as propriedades flex/grid relevantes explicitamente (`flex-direction` incluído), mesmo quando parece redundante — o componente de terceiro pode ter um valor padrão não documentado prontamente visível, e "funcionou no meu teste visual" não é prova de que o layout pretendido é o que realmente renderizou.
 
+### 9.6 Bug real de espaçamento nos formulários (a partir de outro print do usuário)
+
+O usuário mandou um print da tela "Editar cliente" apontando que a borda do botão "Salvar" parecia colada na borda inferior do card do formulário.
+
+**Causa confirmada por medição** (script Playwright, `getBoundingClientRect()` em `.form-card` e `.btn-salvar`): `.form-card` (regra global em `styles.scss`, usada pelos 3 formulários — cliente, veículo e oportunidade) tinha `padding: 0px`. O `<mat-card>` do Angular Material não aplica padding automaticamente ao conteúdo colocado direto dentro dele (sem `mat-card-content`), e a regra do projeto nunca definia um `padding` próprio — o respiro visual nas laterais/topo que aparecia no print era só um efeito colateral do espaçamento interno dos campos (`mat-form-field`), não um padding real do card. Como não há nenhum campo depois dos botões, a base do card ficava sem nenhuma folga: `gapBottom: 0`.
+
+**Correção**: `padding: 1.75rem 2rem !important` em `.form-card`, mais uma folga um pouco maior entre os campos e os botões (`.form-actions` de `margin-top: 1rem` para `1.5rem`) — como é uma regra global, a correção se aplica automaticamente aos 3 formulários de uma vez, sem tocar em cada um. Confirmado por medição nos 3 (`/clientes/1/editar`, `/veiculos/1/editar`, `/oportunidades/1/editar`): `padding: 28px 32px` e `gapBottom: 28` (igual ao `gapTop`) nos três.
+
+Suítes completas re-executadas depois: `Tests 18 passed (18)` (Vitest), `15 passed` (Playwright) — nenhuma regressão (mudança é só de espaçamento, não de estrutura/seletores).
+
 ## 10. Resumo geral
 
 | Suíte | Execuções até passar | Falhas reais encontradas |
@@ -474,6 +484,7 @@ Suítes completas re-executadas depois: `Tests 18 passed (18)` (Vitest), `15 pas
 | Mais massa de dados - `npx playwright test` (Fase 5) | 2 | `oportunidade.spec.ts` procurava a linha recém-criada sem filtrar, e ela caiu fora da 1ª página com 18+ registros de seed |
 | Usabilidade: responsividade/sort/navegação - `npx playwright test` (Fase 6) | 2 | `getByRole('link', {name: 'Veículos'})` sem `exact: true` virou ambíguo depois do novo card clicável "Veículos cadastrados" no dashboard |
 | Responsividade do dashboard - 2ª rodada, a partir de outro print real do usuário (Fase 6) | 1, medida com script (não visual) | `flex-direction` do `.stat-card` herdava `column` do `<mat-card>` do Material (nunca sobrescrito) em vez do `row` assumido; a 1ª correção "funcionou" só porque o layout virou vertical e coincidiu com o alinhamento certo |
+| Espaçamento dos formulários - a partir de outro print real do usuário (Fase 6) | 1, medida com script | `.form-card` (regra global, usada pelos 3 formulários) tinha `padding: 0px` - botão Salvar ficava colado na borda do card |
 | Usabilidade - `ng test` (Fase 6) | 2 | `dashboard.spec.ts` não fornecia `ActivatedRoute`/`Router` no `TestBed`, necessário para o novo `routerLink` no template |
 
 Todas as falhas listadas foram reais (não simuladas), encontradas ao executar os comandos durante o desenvolvimento assistido por IA, e corrigidas antes da entrega — inclusive uma que só foi possível encontrar rodando o pipeline de CI de verdade, depois do push.
