@@ -10,7 +10,7 @@
   <div class="stats-grid">
     <a routerLink="/veiculos" class="stat-card-link">
       <mat-card class="stat-card">
-        <mat-icon class="stat-icon">directions_car</mat-icon>
+        <div class="stat-icon-badge"><mat-icon class="stat-icon">directions_car</mat-icon></div>
         <div>
           <p class="stat-value">{{ d.totalVeiculos }}</p>
           <p class="stat-label">Veículos cadastrados</p>
@@ -19,7 +19,7 @@
     </a>
     <a routerLink="/clientes" class="stat-card-link">
       <mat-card class="stat-card">
-        <mat-icon class="stat-icon">people</mat-icon>
+        <div class="stat-icon-badge"><mat-icon class="stat-icon">people</mat-icon></div>
         <div>
           <p class="stat-value">{{ d.totalClientes }}</p>
           <p class="stat-label">Clientes cadastrados</p>
@@ -28,7 +28,7 @@
     </a>
     <a routerLink="/oportunidades" class="stat-card-link">
       <mat-card class="stat-card">
-        <mat-icon class="stat-icon">trending_up</mat-icon>
+        <div class="stat-icon-badge"><mat-icon class="stat-icon">trending_up</mat-icon></div>
         <div>
           <p class="stat-value">{{ d.totalOportunidades }}</p>
           <p class="stat-label">Oportunidades abertas</p>

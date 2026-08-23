@@ -439,6 +439,22 @@ Os 3 cards de indicadores e as linhas de "Veículos/Oportunidades por status" do
 
 Suítes completas depois de toda a Fase 6: `Tests 18 passed (18)` (Vitest, precisou de um ajuste em `dashboard.spec.ts` — o teste não fornecia `ActivatedRoute`/`Router` no `TestBed`, necessário agora que o template usa `routerLink`; corrigido com `provideRouter([])`, seguindo o mesmo padrão já usado em `veiculo-form.spec.ts`) e `15 passed` (Playwright).
 
+### 9.5 Bug real de responsividade que sobreviveu à primeira "correção" (a partir de um segundo print do usuário)
+
+Depois da correção da seção 9.1, o usuário mandou **outro** print (mesmo dispositivo mobile, e agora também desktop) mostrando o conteúdo dos cards ainda fora do centro — a correção anterior não tinha resolvido de verdade.
+
+**Investigação (não assumir, medir)**: em vez de confiar no print anterior de verificação visual, os cards foram inspecionados via um script Playwright que lê `getComputedStyle` e `getBoundingClientRect` ao vivo contra o container Docker rodando. Resultado revelador: `flex-direction` computado do `.stat-card` era `column`, não `row` — a regra CSS nunca definia essa propriedade explicitamente, e o `<mat-card>` do Angular Material 3 (MDC) já vem com `display: flex; flex-direction: column` como estilo interno padrão do próprio componente. Como a regra do projeto só sobrescrevia `display`/`align-items`/`justify-content` (nunca `flex-direction`), o valor de Material "vencia" silenciosamente. Isso empilhava ícone-em-cima-do-texto (não lado a lado como intencionado) — e, medindo com mais cuidado, o ícone e o bloco de texto estavam, cada um, corretamente centralizados dentro do card nessa orientação vertical, então a verificação visual anterior (um screenshot rápido) não pegou o problema: pareceu "centralizado o suficiente" sem que eu percebesse que o layout tinha virado outra coisa.
+
+**Segunda causa possível, não descartada**: como o Chrome real do usuário (fora desta sessão) pode ter cacheado o `index.html` antigo — que referencia os nomes de arquivo JS/CSS com hash da build anterior — e o `nginx.conf` não tinha nenhuma regra de `Cache-Control` específica para `index.html` (só para os assets com hash, que podem ficar em cache por muito tempo com segurança). Corrigido adicionando `Cache-Control: no-cache` só para `index.html` em `frontend/docker/nginx.conf`, para que o navegador sempre revalide esse arquivo específico (e assim descubra os nomes novos dos assets) mesmo sem um hard refresh manual.
+
+**Correção definitiva**: `.stat-card` em `dashboard.scss` passou a declarar `display: flex !important; flex-direction: column !important` explicitamente (não depender do que o Material define por padrão), com `align-items: center; justify-content: center; text-align: center`. O ícone ganhou um badge circular (`div.stat-icon-badge`, 48px, fundo `--mat-sys-primary-container`) para ficar mais parecido com dashboards modernos, em vez de flutuar sozinho ao lado do número.
+
+**Verificação, desta vez matemática, não só visual**: script Playwright medindo `(labelRect.left + labelRect.right) / 2` contra `(cardRect.left + cardRect.right) / 2` para os 3 cards, em dois viewports (1280×800 desktop e 430×932 — o mesmo tamanho exato do print original do usuário). Resultado: `offset: 0` em todos os 6 casos (3 cards × 2 viewports) — centralização exata, não aproximada. Screenshots dos dois viewports conferidos visualmente depois disso, como confirmação adicional (não como única fonte de verdade).
+
+Suítes completas re-executadas depois: `Tests 18 passed (18)` (Vitest), `15 passed` (Playwright) — nenhuma regressão.
+
+**Lição registrada em `docs/AGENT_GUIDE.md`**: ao sobrescrever CSS de um componente de terceiros (Angular Material, no caso), declarar todas as propriedades flex/grid relevantes explicitamente (`flex-direction` incluído), mesmo quando parece redundante — o componente de terceiro pode ter um valor padrão não documentado prontamente visível, e "funcionou no meu teste visual" não é prova de que o layout pretendido é o que realmente renderizou.
+
 ## 10. Resumo geral
 
 | Suíte | Execuções até passar | Falhas reais encontradas |
@@ -457,6 +473,7 @@ Suítes completas depois de toda a Fase 6: `Tests 18 passed (18)` (Vitest, preci
 | Logo e favicon - processamento de imagem (Fase 4) | 1 (após diagnóstico com `file`/`sips`/Pillow) | arquivo `.png` recebido era na verdade um JPEG sem canal alpha, com o "fundo transparente" desenhado como pixels de xadrez cinza/branco comuns |
 | Mais massa de dados - `npx playwright test` (Fase 5) | 2 | `oportunidade.spec.ts` procurava a linha recém-criada sem filtrar, e ela caiu fora da 1ª página com 18+ registros de seed |
 | Usabilidade: responsividade/sort/navegação - `npx playwright test` (Fase 6) | 2 | `getByRole('link', {name: 'Veículos'})` sem `exact: true` virou ambíguo depois do novo card clicável "Veículos cadastrados" no dashboard |
+| Responsividade do dashboard - 2ª rodada, a partir de outro print real do usuário (Fase 6) | 1, medida com script (não visual) | `flex-direction` do `.stat-card` herdava `column` do `<mat-card>` do Material (nunca sobrescrito) em vez do `row` assumido; a 1ª correção "funcionou" só porque o layout virou vertical e coincidiu com o alinhamento certo |
 | Usabilidade - `ng test` (Fase 6) | 2 | `dashboard.spec.ts` não fornecia `ActivatedRoute`/`Router` no `TestBed`, necessário para o novo `routerLink` no template |
 
 Todas as falhas listadas foram reais (não simuladas), encontradas ao executar os comandos durante o desenvolvimento assistido por IA, e corrigidas antes da entrega — inclusive uma que só foi possível encontrar rodando o pipeline de CI de verdade, depois do push.

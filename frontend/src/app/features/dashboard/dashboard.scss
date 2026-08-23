@@ -21,31 +21,43 @@
 }
 
 .stat-card {
-  display: flex;
+  display: flex !important;
+  flex-direction: column !important;
   align-items: center;
   justify-content: center;
-  gap: 1rem;
-  padding: 1.25rem !important;
-  text-align: left;
+  text-align: center;
+  gap: 0.5rem;
+  padding: 1.5rem !important;
   cursor: pointer;
 }
 
+.stat-icon-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--mat-sys-primary-container, rgba(0, 92, 187, 0.12));
+  margin-bottom: 0.25rem;
+}
+
 .stat-icon {
-  font-size: 2.25rem;
-  width: 2.25rem;
-  height: 2.25rem;
+  font-size: 1.75rem;
+  width: 1.75rem;
+  height: 1.75rem;
   color: var(--mat-sys-primary);
 }
 
 .stat-value {
-  font-size: 1.75rem;
+  font-size: 2rem;
   font-weight: 700;
   margin: 0;
   line-height: 1;
 }
 
 .stat-label {
-  margin: 0.25rem 0 0;
+  margin: 0;
   color: var(--mat-sys-on-surface-variant, #666);
   font-size: 0.85rem;
 }
