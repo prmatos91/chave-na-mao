@@ -78,6 +78,7 @@ Configuração via `.env` (veja [.env.example](.env.example) para a lista comple
   - `V2__seed.sql`: insere um primeiro lote de registros de exemplo (8 veículos, 6 clientes, 6 oportunidades) para o dashboard e as listagens não nascerem vazios.
   - `V3__oportunidade_historico.sql`: cria a tabela de histórico de mudanças de status da oportunidade (ver seção de API abaixo).
   - `V4__mais_massa_de_dados.sql`: massa de dados adicional (totalizando 32 veículos, 16 clientes, 18 oportunidades) — mais marcas, mais de um modelo por marca (mostra o autocomplete marca→modelo filtrando de verdade) e mais de uma página nas 3 listagens.
+  - `V5__oportunidades_para_veiculos_reservados.sql`: vincula uma oportunidade a cada veículo `RESERVADO` que ficou sem nenhuma (o status `RESERVADO` não tem vínculo automático com oportunidade — ver [NOTES.md](NOTES.md)), totalizando 22 oportunidades.
 - As migrations rodam automaticamente na subida do backend (`spring.flyway.enabled=true`), sem passo manual.
 
 ## Estrutura do repositório

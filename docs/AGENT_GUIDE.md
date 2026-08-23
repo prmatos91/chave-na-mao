@@ -112,6 +112,8 @@ O e-mail é validado como único tanto pela aplicação (`ClienteService.validar
 
 **Regra de negócio central do sistema** (`OportunidadeService.aplicarEfeitoColateralDeVenda`): quando uma oportunidade é criada ou atualizada com status `VENDIDO`, o veículo associado é **automaticamente marcado como `VENDIDO`** no mesmo fluxo, refletindo a baixa no estoque. Essa é uma premissa de negócio assumida pelo desenvolvedor (não estava explicitada no desafio) e está documentada aqui de propósito — qualquer agente que for alterar o fluxo de oportunidades precisa saber que essa consequência existe e não deve ser removida sem uma decisão consciente. O inverso (voltar o veículo para `DISPONIVEL` se a oportunidade deixar de estar `VENDIDO`) **não** é implementado — é uma limitação conhecida, ver [NOTES.md](../NOTES.md).
 
+**`RESERVADO` não tem a mesma automação**: só existe a regra acima (oportunidade `VENDIDO` → veículo `VENDIDO`), unidirecional. Não há nenhuma regra ligando o status de uma oportunidade a um veículo ficar `RESERVADO` — esse status é sempre definido manualmente no formulário do veículo (o campo Status oferece os 3 valores livremente, inclusive `VENDIDO` direto, sem depender de oportunidade). Um veículo `RESERVADO` sem nenhuma oportunidade vinculada é um estado válido do sistema — a seção "Clientes interessados" da tela de detalhe (`veiculo-detail`) fica vazia nesse caso de propósito, não é um bug. Ver [NOTES.md](../NOTES.md) para o raciocínio completo por trás dessa assimetria.
+
 Excluir uma oportunidade não tem efeitos colaterais sobre cliente/veículo (mas exclui em cascata o próprio histórico dela, via `ON DELETE CASCADE`).
 
 ### Histórico de status da oportunidade (`OportunidadeHistorico`)

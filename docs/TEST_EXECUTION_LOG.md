@@ -477,6 +477,14 @@ Mudanças, todas em `styles.scss` (regras globais, então valem para as 3 listag
 
 Verificado visualmente (light e dark) nas 3 listagens e também nas telas de detalhe/formulário (pra confirmar que a barrinha do título não ficou estranha fora do contexto original do pedido). Suítes completas: `Tests 18 passed (18)` (Vitest), `15 passed` (Playwright).
 
+### 9.8 Inconsistência real de dados encontrada pelo usuário: veículo "Reservado" sem oportunidade vinculada
+
+O usuário abriu o detalhe do "Jeep Compass" (status Reservado) e notou que "Clientes interessados" aparecia vazio, e perguntou se isso era esperado.
+
+**Investigação**: consultado `GET /api/oportunidades?veiculoId=X` para os 5 veículos com status `RESERVADO` — 4 dos 5 (Jeep Compass, Renault Kwid, Honda City, Hyundai Tucson) não tinham nenhuma oportunidade vinculada; só o Peugeot 208 tinha. Confirmado no código (`OportunidadeService`, `veiculo-form.ts`) que isso **não é um bug**: `RESERVADO` não tem nenhuma automação equivalente à de `VENDIDO` — o status do veículo é sempre definido diretamente no formulário (o campo aceita Disponível/Reservado/Vendido livremente), e só existe uma regra unidirecional específica (oportunidade `VENDIDO` → veículo `VENDIDO`). Um veículo `RESERVADO` sem oportunidade é um estado válido do sistema hoje. Essa distinção foi documentada em `NOTES.md` (numa primeira versão da explicação eu escrevi por engano que o formulário "só oferece Disponível/Reservado" — checado o `veiculo-form.html` antes de publicar e corrigido: o campo Status sempre ofereceu os 3 valores).
+
+**O que era, de fato, uma inconsistência real**: a massa de dados de exemplo tinha 4 veículos `RESERVADO` sem nenhuma oportunidade — o que não é realista (na prática um veículo quase sempre fica reservado por causa de uma negociação em andamento). Corrigido com `V5__oportunidades_para_veiculos_reservados.sql`, adicionando uma oportunidade (`EM_NEGOCIACAO` ou `PROPOSTA_ENVIADA`) para cada um dos 4 veículos órfãos, ligando a clientes já existentes no seed. Verificado via API (`GET /api/oportunidades?veiculoId=X` para os 4 ids, agora `totalElements: 1` em todos) e visualmente na tela de detalhe do Jeep Compass. `./mvnw test`: 18/18. `npx playwright test`: 15/15 — nenhuma regressão.
+
 ## 10. Resumo geral
 
 | Suíte | Execuções até passar | Falhas reais encontradas |
@@ -497,6 +505,7 @@ Verificado visualmente (light e dark) nas 3 listagens e também nas telas de det
 | Usabilidade: responsividade/sort/navegação - `npx playwright test` (Fase 6) | 2 | `getByRole('link', {name: 'Veículos'})` sem `exact: true` virou ambíguo depois do novo card clicável "Veículos cadastrados" no dashboard |
 | Responsividade do dashboard - 2ª rodada, a partir de outro print real do usuário (Fase 6) | 1, medida com script (não visual) | `flex-direction` do `.stat-card` herdava `column` do `<mat-card>` do Material (nunca sobrescrito) em vez do `row` assumido; a 1ª correção "funcionou" só porque o layout virou vertical e coincidiu com o alinhamento certo |
 | Espaçamento dos formulários - a partir de outro print real do usuário (Fase 6) | 1, medida com script | `.form-card` (regra global, usada pelos 3 formulários) tinha `padding: 0px` - botão Salvar ficava colado na borda do card |
+| Massa de dados - veículos "Reservado" sem oportunidade (Fase 6) | 1 (nova migration) | 4 dos 5 veículos `RESERVADO` no seed não tinham nenhuma oportunidade vinculada, encontrado pelo usuário navegando na tela de detalhe |
 | Usabilidade - `ng test` (Fase 6) | 2 | `dashboard.spec.ts` não fornecia `ActivatedRoute`/`Router` no `TestBed`, necessário para o novo `routerLink` no template |
 
 Todas as falhas listadas foram reais (não simuladas), encontradas ao executar os comandos durante o desenvolvimento assistido por IA, e corrigidas antes da entrega — inclusive uma que só foi possível encontrar rodando o pipeline de CI de verdade, depois do push.
