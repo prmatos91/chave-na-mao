@@ -189,6 +189,8 @@ Padrão de feature: `standalone components`, roteamento lazy-loaded (`app.routes
 
 **Ambiguidade de `getByLabel` em `MatAutocomplete`**: o painel de opções (`role="listbox"`) fica associado ao mesmo `aria-labelledby` do campo de input, então `page.getByLabel('Marca')` pode resolver dois elementos (o input e o painel) e falhar em modo estrito. Use `page.getByRole('combobox', { name: 'Marca' })` para apontar direto ao input.
 
+**Registro recém-criado pode nao estar na 1ª página da listagem**: o banco tem uma massa de dados de seed relativamente grande (`V4__mais_massa_de_dados.sql`, 32 veículos/16 clientes/18 oportunidades) — um teste E2E que cria um registro e em seguida tenta localizar a linha dele na listagem (`page.getByRole('row').filter({ hasText: ... })`) sem aplicar nenhum filtro pode falhar, porque o novo registro (maior id) cai fora da página padrão do `MatPaginator`. Sempre filtre pela busca/dropdown da própria tela (ex. `page.getByRole('combobox', { name: 'Cliente' })`) antes de procurar a linha, em vez de assumir que ela está visível na primeira página.
+
 **Limitação de tipagem conhecida**: nas tabelas (`MatTable`), o parâmetro de `*matCellDef="let row"` não é inferido como o tipo genérico da linha nesta versão do Angular Material (fica `any`), então indexar um `Record<Enum, string>` diretamente no template causa erro de compilação (`TS7053`). A solução adotada em todo o projeto é expor métodos tipados no componente (`statusLabel(status)`, `statusClass(status)`) e chamá-los do template em vez de indexar o Record diretamente. Siga esse padrão em qualquer tabela nova.
 
 ## 4. Como estender o sistema

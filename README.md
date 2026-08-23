@@ -75,8 +75,9 @@ Configuração via `.env` (veja [.env.example](.env.example) para a lista comple
 - ORM: Spring Data JPA / Hibernate (apenas para leitura/escrita — `ddl-auto: validate`, nunca gera schema automaticamente).
 - Migrations versionadas com **Flyway**, em [backend/src/main/resources/db/migration](backend/src/main/resources/db/migration):
   - `V1__init.sql`: cria as tabelas `veiculo`, `cliente` e `oportunidade`.
-  - `V2__seed.sql`: insere alguns registros de exemplo (8 veículos, 6 clientes, 6 oportunidades) para o dashboard e as listagens não nascerem vazios.
+  - `V2__seed.sql`: insere um primeiro lote de registros de exemplo (8 veículos, 6 clientes, 6 oportunidades) para o dashboard e as listagens não nascerem vazios.
   - `V3__oportunidade_historico.sql`: cria a tabela de histórico de mudanças de status da oportunidade (ver seção de API abaixo).
+  - `V4__mais_massa_de_dados.sql`: massa de dados adicional (totalizando 32 veículos, 16 clientes, 18 oportunidades) — mais marcas, mais de um modelo por marca (mostra o autocomplete marca→modelo filtrando de verdade) e mais de uma página nas 3 listagens.
 - As migrations rodam automaticamente na subida do backend (`spring.flyway.enabled=true`), sem passo manual.
 
 ## Estrutura do repositório

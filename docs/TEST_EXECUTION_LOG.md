@@ -391,7 +391,27 @@ Depois de trocar `<mat-icon>directions_car</mat-icon>` por `<img src="logo.png">
 - Por requisição HTTP direta (`fetch('/favicon.ico', {cache: 'no-store'})`): o Nginx serve o novo arquivo de 652 bytes (o navegador tinha cacheado agressivamente o favicon antigo de 15KB numa primeira checagem sem `cache: 'no-store'` — comportamento normal de cache de favicon, não um bug da aplicação).
 - Suítes completas re-executadas depois da troca: `Tests 18 passed (18)` (Vitest) e `12 passed (10.7s)` (Playwright) — nenhuma regressão (nenhum teste dependia do ícone antigo, só do texto "Chave na Mão").
 
-## 8. Resumo geral
+## 8. Fase 5 — mais massa de dados no seed
+
+Pedido do usuário: mais dados no banco para a demonstração ficar mais realista (mais de uma página nas listagens, o autocomplete marca→modelo mostrando de verdade uma cascata com múltiplas opções, dashboard com números mais interessantes). Adicionada `V4__mais_massa_de_dados.sql` (nova migration, não altera `V2__seed.sql` já aplicada) com 24 veículos, 10 clientes e 12 oportunidades a mais — incluindo um segundo/terceiro modelo para marcas já existentes (ex.: Toyota ganha Yaris e Hilux além do Corolla original) e 8 marcas novas. As FKs de `oportunidade` foram resolvidas por chave natural (subquery por e-mail do cliente / marca+modelo+ano do veículo), não por id hardcoded, para não depender da ordem exata de auto-increment em cada ambiente.
+
+**Verificação real** (rebuild do backend + `docker compose up --build`, log do Flyway confirmando `Successfully applied 1 migration ... now at version v4`, e `GET /api/dashboard`):
+
+```
+totalVeiculos: 32 (23 Disponivel, 5 Reservado, 4 Vendido)
+totalClientes: 16
+totalOportunidades: 18 (5 Novo lead, 4 Em negociacao, 3 Proposta enviada, 4 Vendido, 2 Perdido)
+```
+
+`./mvnw test` re-executado: 18/18 (nenhum teste unitário dependia dos totais antigos do seed).
+
+**Bug real encontrado ao rodar a suíte Playwright contra o dataset maior** (`npx playwright test`, 11 passaram, 1 falhou): `oportunidade.spec.ts` — o teste cria uma oportunidade nova e, logo em seguida, tenta abri-la localizando a linha na listagem sem aplicar nenhum filtro. Com só 6 oportunidades de seed isso sempre funcionava (a listagem inteira cabia numa página); com 18+, o registro recém-criado (maior id) pode cair fora da primeira página, e a busca pela linha falha. A própria etapa de limpeza do mesmo teste já usava o filtro "Cliente" antes de excluir — mesmo padrão foi aplicado à etapa de visualização (filtrar por cliente com `getByRole('combobox', { name: 'Cliente' })` antes de clicar em "Visualizar"). Depois da correção, suíte completa: `12 passed`.
+
+**Efeito colateral encontrado e corrigido manualmente**: a primeira execução da suíte (antes da correção acima) tinha falhado no meio do teste de oportunidade, ou seja, os passos 1-3 (criar veículo, criar cliente, criar oportunidade Vendido) já tinham rodado e a etapa de limpeza no fim do teste nunca foi alcançada — sobrando 1 veículo, 1 cliente e 1 oportunidade órfãos no banco de desenvolvimento local (dashboard mostrando 33/17/19 em vez de 32/16/18). Identificados via `GET /api/veiculos?q=...`/`GET /api/clientes?q=...` (prefixo `E2EOp`/`Cliente Op E2E` do próprio teste) e removidos manualmente via `DELETE` na API (oportunidade → veículo → cliente, respeitando a FK `ON DELETE RESTRICT`). Isso não é um bug do produto nem afeta ambientes novos/CI (cada execução de CI sobe um banco vazio do zero) — foi só resíduo de uma execução de teste falha no volume Docker persistente da minha máquina, documentado aqui porque é exatamente o tipo de coisa que só aparece rodando os testes de verdade contra um banco de verdade.
+
+Verificação visual final no navegador: paginação da listagem de veículos mostrando `1 – 10 de 32` (antes `1 – 8 de 8`, cabia tudo numa página só); formulário de novo veículo com marca "Toyota" selecionada mostrando os 3 modelos (Corolla, Hilux, Yaris) no autocomplete de modelo, confirmando a cascata marca→modelo com dados reais de verdade, não só com o único modelo por marca que existia antes.
+
+## 9. Resumo geral
 
 | Suíte | Execuções até passar | Falhas reais encontradas |
 |---|---|---|
@@ -407,5 +427,6 @@ Depois de trocar `<mat-icon>directions_car</mat-icon>` por `<img src="logo.png">
 | Polimento visual - `npm test` (Fase 3) | 2 | `ThemeService` acessando `localStorage`/`window` sem guarda, quebrando testes existentes |
 | Cobertura de testes da Fase 3 - `npx playwright test` (Fase 3) | 2 | regex de `getByText` não tolerava espaço nas bordas do rótulo do `MatPaginator`; `getByLabel('Marca')` ambíguo entre input e painel do `MatAutocomplete` |
 | Logo e favicon - processamento de imagem (Fase 4) | 1 (após diagnóstico com `file`/`sips`/Pillow) | arquivo `.png` recebido era na verdade um JPEG sem canal alpha, com o "fundo transparente" desenhado como pixels de xadrez cinza/branco comuns |
+| Mais massa de dados - `npx playwright test` (Fase 5) | 2 | `oportunidade.spec.ts` procurava a linha recém-criada sem filtrar, e ela caiu fora da 1ª página com 18+ registros de seed |
 
 Todas as falhas listadas foram reais (não simuladas), encontradas ao executar os comandos durante o desenvolvimento assistido por IA, e corrigidas antes da entrega — inclusive uma que só foi possível encontrar rodando o pipeline de CI de verdade, depois do push.

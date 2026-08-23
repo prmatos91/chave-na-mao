@@ -41,7 +41,12 @@ test.describe('Oportunidades - fluxo completo e regra de negócio', () => {
     await expect(page.getByText('Oportunidade cadastrada com sucesso.')).toBeVisible();
 
     // 4. Abre a oportunidade recem-criada e confirma status + timeline.
+    // Filtra por cliente antes de procurar a linha: com a massa de dados do
+    // seed (18+ oportunidades), o registro recem-criado pode nao estar na
+    // primeira pagina da listagem sem paginacao/filtro.
     await page.goto('/oportunidades');
+    await page.getByLabel('Cliente').click();
+    await page.getByRole('option', { name: nomeCliente }).click();
     await page.getByRole('row').filter({ hasText: nomeCliente }).getByLabel('Visualizar').click();
     await expect(page).toHaveURL(/\/oportunidades\/\d+$/);
     await expect(page.getByText('Vendido', { exact: true }).first()).toBeVisible();
