@@ -6,8 +6,7 @@
 
 ```text
 Papel: atue como um engenheiro de software sênior full-stack, responsável por
-entregar um projeto real sob prazo — não um exercício de sala de aula. Preze
-por decisões defensáveis em entrevista, não pela solução mais impressionante.
+entregar um projeto real sob prazo — não um exercício de sala de aula.
 
 Contexto: isto é um teste técnico de um processo seletivo. O enunciado
 completo está anexado (PDF/DOCX) e é a única fonte de verdade sobre os
@@ -50,7 +49,7 @@ Um prompt bom não é o que soa mais completo; é o que fecha, uma por uma, as f
 - **Contexto antes da tarefa** evita otimizar para o pedido errado. Um modelo que sabe que isto é avaliado por uma empresa se comporta de forma mensuravelmente diferente de um que só recebeu "faça um CRM".
 - **Fonte de verdade explícita** evita o telefone-sem-fio: se eu descrevo o enunciado com minhas palavras, qualquer detalhe que eu esquecer de mencionar simplesmente desaparece do projeto. Anexar o documento original e proibir resumo elimina essa perda.
 - **"Pare e pergunte, ou documente a premissa"** evita a pior das duas alternativas ruins: ficar travado esperando uma resposta que não é crítica, ou decidir sozinho sem deixar rastro. Cobrir os dois casos com uma regra clara evita ambas.
-- **Ambiente declarado, nunca presumido** evita comandos que assumem uma ferramenta que não existe (e falham a metade do projeto depois) e também comandos "de segurança" desnecessários. É o que fez a instalação de Java, Docker e Angular CLI ser verificada antes de qualquer `brew install`.
+- **Ambiente declarado, nunca presumido** evita comandos que assumem uma ferramenta que não existe (e falham a metade do projeto depois) e também comandos "de segurança" desnecessários.
 - **Entregáveis numerados e nomeados** evita a entrega vaga que não dá para checar se terminou. "Faça um teste técnico" não tem critério de aceite; "entregue estes 5 arquivos" tem — e cada um virou, de fato, um arquivo real no repositório.
 - **Execução real, nunca simulada** é a regra mais importante do prompt: sem ela, é trivial para uma IA escrever um `TEST_EXECUTION_LOG.md` bonito e inventado. Com ela, o documento tem bugs reais e corrigidos — inclusive um que só apareceu na primeira execução real do pipeline de CI, depois do push.
 - **Modo de trabalho incremental** evita o padrão mais caro de todos: gerar o projeto inteiro de uma vez e só descobrir na primeira tentativa de rodar que a base estava errada. Validar a cada passo troca um retrabalho grande por vários pequenos.
